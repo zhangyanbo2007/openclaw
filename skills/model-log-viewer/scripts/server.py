@@ -362,6 +362,7 @@ class LogViewerHandler(SimpleHTTPRequestHandler):
         # 按时间轴展开所有事件（User/Assistant/Tool/Model 四种角色）
         timeline_events = []
         prev_timestamp = None
+        session_start = index_data.get("started_at")  # 用于计算第一个请求的间隔
         round_num = 0  # 轮次计数器（只在用户输入时递增）
 
         def extract_user_text(content) -> tuple:
@@ -439,6 +440,12 @@ class LogViewerHandler(SimpleHTTPRequestHandler):
                 curr_dt = datetime.fromisoformat(timestamp)
                 prev_dt = datetime.fromisoformat(prev_timestamp)
                 interval = (curr_dt - prev_dt).total_seconds()
+                interval_str = f"{interval:.1f}s"
+            elif session_start:
+                # 第一个请求：计算相对于会话开始时间的间隔
+                curr_dt = datetime.fromisoformat(timestamp)
+                start_dt = datetime.fromisoformat(session_start)
+                interval = (curr_dt - start_dt).total_seconds()
                 interval_str = f"{interval:.1f}s"
             else:
                 interval_str = "-"

@@ -234,56 +234,6 @@
         }
       ]
     },
-    "vllm": {
-      "baseUrl": "http://192.168.68.120:5555/v1",
-      "apiKey": "not-needed",
-      "api": "openai-completions",
-      "models": [
-        {
-          "id": "qwen3.5-27b",
-          "name": "Qwen3.5-27B (vLLM 本地)",
-          "api": "openai-completions",
-          "reasoning": true,
-          "input": [
-            "text",
-            "image"
-          ],
-          "cost": {
-            "input": 0,
-            "output": 0,
-            "cacheRead": 0,
-            "cacheWrite": 0
-          },
-          "contextWindow": 262144,
-          "maxTokens": 65536
-        }
-      ]
-    },
-    "vllm-forward": {
-      "baseUrl": "http://192.168.68.120:8888/v1",
-      "apiKey": "not-needed",
-      "api": "openai-completions",
-      "models": [
-        {
-          "id": "qwen3.5-27b",
-          "name": "Qwen3.5-27B (转发)",
-          "api": "openai-completions",
-          "reasoning": true,
-          "input": [
-            "text",
-            "image"
-          ],
-          "cost": {
-            "input": 0,
-            "output": 0,
-            "cacheRead": 0,
-            "cacheWrite": 0
-          },
-          "contextWindow": 262144,
-          "maxTokens": 65536
-        }
-      ]
-    },
     "vllm-5557": {
       "baseUrl": "http://192.168.68.120:5557/v1",
       "apiKey": "not-needed",
@@ -306,31 +256,6 @@
           },
           "contextWindow": 32768,
           "maxTokens": 16384
-        }
-      ]
-    },
-    "vllm-5555": {
-      "baseUrl": "http://192.168.68.120:5555/v1",
-      "apiKey": "not-needed",
-      "api": "openai-completions",
-      "models": [
-        {
-          "id": "qwen3.5-27b",
-          "name": "Qwen3.5-27B",
-          "api": "openai-completions",
-          "reasoning": true,
-          "input": [
-            "text",
-            "image"
-          ],
-          "cost": {
-            "input": 0,
-            "output": 0,
-            "cacheRead": 0,
-            "cacheWrite": 0
-          },
-          "contextWindow": 65536,
-          "maxTokens": 32768
         }
       ]
     },

@@ -1,0 +1,20 @@
+{
+  "conversation_id": "conv_7167d19ab141",
+  "user_id": "unknown",
+  "client": "unknown",
+  "first_message": {
+    "role": "user",
+    "content": "test2"
+  },
+  "started_at": "2026-04-08T16:28:36.047996",
+  "requests": [
+    {
+      "timestamp": "2026-04-08T16:28:36.047996",
+      "model": "gemma-4-31b-it",
+      "tokens": 20,
+      "user_id": "unknown"
+    }
+  ],
+  "last_updated": "2026-04-08T16:28:36.047996",
+  "request_count": 1
+}

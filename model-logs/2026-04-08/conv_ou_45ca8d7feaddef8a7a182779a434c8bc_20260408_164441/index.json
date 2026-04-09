@@ -1,0 +1,92 @@
+{
+  "conversation_id": "conv_ou_45ca8d7feaddef8a7a182779a434c8bc_20260408_164441",
+  "user_id": "ou_45ca8d7feaddef8a7a182779a434c8bc",
+  "client": "unknown",
+  "first_message": {
+    "role": "system",
+    "content": "You are a context summarization assistant. Your task is to read a conversation between a user and an AI coding assistant, then produce a structured summary following the exact format specified.\n\nDo NOT continue the conversation. Do NOT respond to any questions in the conversation. ONLY output the structured summary."
+  },
+  "started_at": "2026-04-08T16:44:41.795268",
+  "requests": [
+    {
+      "timestamp": "2026-04-08T16:44:41.795268",
+      "model": "gemma-4-31b-it",
+      "tokens": 0,
+      "user_id": "ou_45ca8d7feaddef8a7a182779a434c8bc"
+    },
+    {
+      "timestamp": "2026-04-08T16:44:52.502719",
+      "model": "gemma-4-31b-it",
+      "tokens": 0,
+      "user_id": "unknown"
+    },
+    {
+      "timestamp": "2026-04-08T16:45:01.980344",
+      "model": "gemma-4-31b-it",
+      "tokens": 0,
+      "user_id": "unknown"
+    },
+    {
+      "timestamp": "2026-04-08T16:45:16.325278",
+      "model": "gemma-4-31b-it",
+      "tokens": 0,
+      "user_id": "unknown"
+    },
+    {
+      "timestamp": "2026-04-08T16:45:35.447298",
+      "model": "gemma-4-31b-it",
+      "tokens": 0,
+      "user_id": "unknown"
+    },
+    {
+      "timestamp": "2026-04-08T16:45:36.415808",
+      "model": "gemma-4-31b-it",
+      "tokens": 0,
+      "user_id": "ou_45ca8d7feaddef8a7a182779a434c8bc"
+    },
+    {
+      "timestamp": "2026-04-08T16:45:41.823347",
+      "model": "gemma-4-31b-it",
+      "tokens": 0,
+      "user_id": "ou_45ca8d7feaddef8a7a182779a434c8bc"
+    },
+    {
+      "timestamp": "2026-04-08T16:45:43.573149",
+      "model": "gemma-4-31b-it",
+      "tokens": 0,
+      "user_id": "ou_45ca8d7feaddef8a7a182779a434c8bc"
+    },
+    {
+      "timestamp": "2026-04-08T16:45:47.994231",
+      "model": "gemma-4-31b-it",
+      "tokens": 0,
+      "user_id": "ou_45ca8d7feaddef8a7a182779a434c8bc"
+    },
+    {
+      "timestamp": "2026-04-08T16:45:59.523080",
+      "model": "gemma-4-31b-it",
+      "tokens": 0,
+      "user_id": "ou_45ca8d7feaddef8a7a182779a434c8bc"
+    },
+    {
+      "timestamp": "2026-04-08T16:46:02.078459",
+      "model": "gemma-4-31b-it",
+      "tokens": 0,
+      "user_id": "ou_45ca8d7feaddef8a7a182779a434c8bc"
+    },
+    {
+      "timestamp": "2026-04-08T16:46:04.011546",
+      "model": "gemma-4-31b-it",
+      "tokens": 0,
+      "user_id": "ou_45ca8d7feaddef8a7a182779a434c8bc"
+    },
+    {
+      "timestamp": "2026-04-08T16:46:14.166810",
+      "model": "gemma-4-31b-it",
+      "tokens": 0,
+      "user_id": "ou_45ca8d7feaddef8a7a182779a434c8bc"
+    }
+  ],
+  "last_updated": "2026-04-08T16:46:14.166810",
+  "request_count": 13
+}

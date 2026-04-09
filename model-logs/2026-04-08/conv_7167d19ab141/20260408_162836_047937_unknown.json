@@ -1,0 +1,34 @@
+{
+  "timestamp": "2026-04-08T16:28:36.047996",
+  "client_ip": "127.0.0.1",
+  "client": "unknown",
+  "user_id": "unknown",
+  "conversation_id": "conv_7167d19ab141",
+  "endpoint": "v1/chat/completions",
+  "model": "gemma-4-31b-it",
+  "is_stream": false,
+  "request": {
+    "model": "gemma-4-31b-it",
+    "messages": [
+      {
+        "role": "user",
+        "content": "test2"
+      }
+    ],
+    "parameters": {
+      "max_tokens": 5
+    }
+  },
+  "response": {
+    "content": "Test received! I am",
+    "reasoning": null,
+    "tool_calls": [],
+    "usage": {
+      "prompt_tokens": 15,
+      "total_tokens": 20,
+      "completion_tokens": 5,
+      "prompt_tokens_details": null
+    },
+    "finish_reason": "length"
+  }
+}

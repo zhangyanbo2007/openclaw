@@ -738,7 +738,7 @@ class LogViewerHandler(SimpleHTTPRequestHandler):
             self.send_json({"success": False, "error": str(e)})
 
     def get_openclaw_models(self):
-        """从 openclaw.json 读取所有模型配置"""
+        """从 openclaw.json 读取所有模型配置，过滤掉 localproxy 开头的本地代理"""
         openclaw_config = Path.home() / ".openclaw" / "openclaw.json"
         if not openclaw_config.exists():
             self.send_json({"success": False, "error": "openclaw.json not found"})
@@ -752,6 +752,10 @@ class LogViewerHandler(SimpleHTTPRequestHandler):
             providers = config.get("models", {}).get("providers", {})
 
             for provider_name, provider_config in providers.items():
+                # 过滤掉 localproxy 开头的本地代理
+                if provider_name.startswith("localproxy-"):
+                    continue
+
                 base_url = provider_config.get("baseUrl", "")
                 for model in provider_config.get("models", []):
                     model_id = model.get("id", "")
@@ -806,7 +810,7 @@ class LogViewerHandler(SimpleHTTPRequestHandler):
             # 为每个端口生成 provider 配置
             for port_str, model_key in port_to_model.items():
                 port = int(port_str)
-                provider_name = f"vllm-{port}"
+                provider_name = f"localproxy-{port}"
 
                 # 获取模型信息
                 model_info = all_models.get(model_key)
@@ -818,7 +822,7 @@ class LogViewerHandler(SimpleHTTPRequestHandler):
                         "api": "openai-completions",
                         "models": [{
                             "id": model_info["model_id"],
-                            "name": f"{model_info['name']}（本地转发 {port}）",
+                            "name": model_info["name"],
                             "api": "openai-completions"
                         }]
                     }

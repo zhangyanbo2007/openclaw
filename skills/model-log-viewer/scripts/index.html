@@ -779,6 +779,14 @@
                         delete currentPortMapping[modelKey];
                         await saveTempConfig();
                         showAlert('启动失败：' + (result.error || '未知错误'), 'error');
+                    } else if (result.test && !result.test.success) {
+                        // 启动成功但测试失败
+                        delete currentPortMapping[modelKey];
+                        await saveTempConfig();
+                        showAlert(`启动成功但测试失败：${result.test.error}`, 'error');
+                    } else if (result.test && result.test.success) {
+                        // 启动成功且测试通过
+                        showAlert(`启动成功！${result.test.message}`, 'success');
                     } else {
                         showAlert('正在启动代理，请稍候...', 'info');
                     }

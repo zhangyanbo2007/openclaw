@@ -370,6 +370,7 @@ class VLLMProxy:
                 if model_key in [f"{p}/{m['id']}" for p in providers for m in providers[p].get("models", [])]:
                     for provider_name, provider_config in providers.items():
                         base_url = provider_config.get("baseUrl", "")
+                        api_key = provider_config.get("apiKey", "")
                         for model in provider_config.get("models", []):
                             full_key = f"{provider_name}/{model.get('id', '')}"
                             if full_key == model_key:
@@ -377,7 +378,8 @@ class VLLMProxy:
                                     "url": base_url,
                                     "name": model.get("name", model.get("id", "")),
                                     "provider": provider_name,
-                                    "model_id": model.get("id", "")
+                                    "model_id": model.get("id", ""),
+                                    "api_key": api_key  # 保存 API 密钥
                                 }
                                 break
         except Exception as e:
@@ -425,6 +427,9 @@ class VLLMProxy:
                 "error": f"模型 '{requested_model}' 未配置，可用的模型：{list(self.models.keys())}"
             }, status=400)
 
+        # 获取 API 密钥
+        api_key = self.models.get(requested_model, {}).get("api_key", "")
+
         # 保存原始 path 用于日志记录
         original_path = path
 
@@ -439,7 +444,10 @@ class VLLMProxy:
         if request_body_copy.get("stream", False) and "stream_options" not in request_body_copy:
             request_body_copy["stream_options"] = {"include_usage": True}
 
-        # 记录请求开始时间
+        # 构建请求头，添加 Authorization
+        forward_headers = {k: v for k, v in headers.items() if k.lower() not in ['host', 'content-length']}
+        if api_key and "authorization" not in [k.lower() for k in forward_headers.keys()]:
+            forward_headers["Authorization"] = f"Bearer {api_key}"
         request_start = datetime.now()
 
         try:
@@ -448,7 +456,7 @@ class VLLMProxy:
                     method=request.method,
                     url=url,
                     json=request_body_copy if request_body_copy else None,
-                    headers={k: v for k, v in headers.items() if k.lower() not in ['host', 'content-length']}
+                    headers=forward_headers
                 ) as resp:
                     content_type = resp.content_type
 

@@ -902,12 +902,71 @@ class LogViewerHandler(SimpleHTTPRequestHandler):
             return {"success": False, "error": str(e)}
 
     def start_proxy(self, port, config_file_name):
-        """启动代理服务"""
+        """启动代理服务 - 先检查 API 密钥，再启动，然后测试验证"""
         global proxy_processes, proxy_logs
 
         # 检查是否已在进程中且正在运行
         if port in proxy_processes and proxy_processes[port].poll() is None:
             self.send_json({"success": False, "error": f"Proxy already running on port {port}"})
+            return
+
+        # 读取配置获取模型映射
+        config_file = BASE_DIR / config_file_name
+        with open(config_file, "r", encoding="utf-8") as f:
+            proxy_config = json.load(f)
+
+        model_port_mapping = proxy_config.get("model_port_mapping", {})
+
+        # 查找映射到该端口的模型
+        model_key = None
+        for mk, mp in model_port_mapping.items():
+            if mp == port:
+                model_key = mk
+                break
+
+        if not model_key:
+            self.send_json({"success": False, "error": f"端口 {port} 没有配置模型映射"})
+            return
+
+        # 解析模型密钥获取 provider 和 model_id
+        parts = model_key.split("/")
+        if len(parts) != 2:
+            self.send_json({"success": False, "error": f"无效的模型密钥：{model_key}"})
+            return
+
+        provider_name, model_id = parts
+
+        # 检查 API 密钥（先检查 openclaw.json，再检查 agents/main/agent/models.json）
+        api_key = None
+        api_source = None
+
+        # 1. 检查 openclaw.json
+        openclaw_config_path = Path.home() / ".openclaw" / "openclaw.json"
+        if openclaw_config_path.exists():
+            with open(openclaw_config_path, "r", encoding="utf-8") as f:
+                openclaw_config = json.load(f)
+            provider = openclaw_config.get("models", {}).get("providers", {}).get(provider_name)
+            if provider:
+                api_key = provider.get("apiKey")
+                api_source = "openclaw.json"
+
+        # 2. 如果 openclaw.json 没有，检查 agents/main/agent/models.json
+        if not api_key:
+            agents_models_path = Path.home() / ".openclaw" / "agents" / "main" / "agent" / "models.json"
+            if agents_models_path.exists():
+                with open(agents_models_path, "r", encoding="utf-8") as f:
+                    agents_config = json.load(f)
+                provider = agents_config.get("providers", {}).get(provider_name)
+                if provider:
+                    api_key = provider.get("apiKey")
+                    api_source = "agents/main/agent/models.json"
+
+        # 没有 API 密钥，拒绝启动
+        if not api_key:
+            self.send_json({
+                "success": False,
+                "error": f"模型 '{model_key}' 的提供者 '{provider_name}' 没有配置 API 密钥，请在 openclaw.json 或 agents/main/agent/models.json 中配置"
+            })
             return
 
         # 检查端口是否被外部进程占用
@@ -960,13 +1019,94 @@ class LogViewerHandler(SimpleHTTPRequestHandler):
             thread = threading.Thread(target=read_logs, daemon=True)
             thread.start()
 
+            # 等待 2 秒让代理启动
+            time.sleep(2)
+
+            # 发送测试请求验证代理是否可用
+            test_result = self.test_proxy(port)
+
             self.send_json({
                 "success": True,
-                "message": f"Proxy started on port {port}",
-                "pid": proc.pid
+                "message": f"Proxy started on port {port} (API 密钥来自 {api_source})",
+                "pid": proc.pid,
+                "test": test_result
             })
         except Exception as e:
             self.send_json({"success": False, "error": str(e)})
+
+    def test_proxy(self, port):
+        """测试代理是否可用"""
+        try:
+            # 读取配置获取模型映射
+            config_file = BASE_DIR / "proxy_config.json"
+            with open(config_file, "r", encoding="utf-8") as f:
+                proxy_config = json.load(f)
+
+            # 查找映射到该端口的模型
+            model_key = None
+            for mk, mp in proxy_config.get("model_port_mapping", {}).items():
+                if mp == port:
+                    model_key = mk
+                    break
+
+            if not model_key:
+                return {"success": False, "error": "未找到模型映射"}
+
+            # 读取 openclaw.json 获取原始模型信息
+            openclaw_config_path = Path.home() / ".openclaw" / "openclaw.json"
+            with open(openclaw_config_path, "r", encoding="utf-8") as f:
+                openclaw_config = json.load(f)
+
+            # 解析模型密钥获取 provider 和 model_id
+            parts = model_key.split("/")
+            if len(parts) != 2:
+                return {"success": False, "error": f"无效的模型密钥：{model_key}"}
+
+            provider_name, model_id = parts
+            provider = openclaw_config.get("models", {}).get("providers", {}).get(provider_name)
+
+            if not provider:
+                return {"success": False, "error": f"未找到提供者：{provider_name}"}
+
+            # 获取 API 密钥和基础 URL
+            api_key = provider.get("apiKey", "")
+            base_url = provider.get("baseUrl", "")
+
+            # 发送测试请求
+            test_url = f"{base_url}/chat/completions"
+            headers = {
+                "Content-Type": "application/json",
+                "Authorization": f"Bearer {api_key}"
+            }
+            data = {
+                "model": model_id,
+                "messages": [{"role": "user", "content": "Hi"}],
+                "max_tokens": 5
+            }
+
+            import urllib.request
+            req = urllib.request.Request(
+                test_url,
+                data=json.dumps(data).encode("utf-8"),
+                headers=headers,
+                method="POST"
+            )
+            req.add_header("Connection", "close")
+
+            with urllib.request.urlopen(req, timeout=10) as response:
+                result = json.loads(response.read().decode("utf-8"))
+                if "choices" in result or "data" in result:
+                    return {"success": True, "message": f"测试成功，模型：{model_id}"}
+                else:
+                    return {"success": False, "error": f"响应异常：{result}"}
+
+        except urllib.error.HTTPError as e:
+            error_body = e.read().decode("utf-8") if e.fp else ""
+            return {"success": False, "error": f"API 返回错误 {e.code}: {error_body}"}
+        except urllib.error.URLError as e:
+            return {"success": False, "error": f"网络错误：{e.reason}"}
+        except Exception as e:
+            return {"success": False, "error": f"测试失败：{str(e)}"}
 
     def stop_proxy(self, port):
         """停止代理服务"""

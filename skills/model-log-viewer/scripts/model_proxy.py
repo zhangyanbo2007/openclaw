@@ -194,7 +194,7 @@ class ConversationLogger:
 
     def parse_sse_stream(self, sse_text: str) -> dict:
         """解析 SSE 流，提取完整的响应内容"""
-        result = {"content": "", "reasoning": "", "usage": {}}
+        result = {"content": "", "reasoning": "", "usage": {}, "finish_reason": None}
         lines = sse_text.split("\n")
 
         for line in lines:
@@ -204,6 +204,11 @@ class ConversationLogger:
                     break
                 try:
                     chunk = json.loads(data)
+
+                    # 直接检查 chunk 是否有 usage（某些 vLLM 版本在 choices 为空的 chunk 中返回）
+                    if chunk.get("usage"):
+                        result["usage"] = chunk["usage"]
+
                     choice = chunk.get("choices", [{}])[0]
                     delta = choice.get("delta", {})
 
@@ -213,9 +218,7 @@ class ConversationLogger:
                     if delta.get("reasoning"):
                         result["reasoning"] += delta["reasoning"]
 
-                    # 获取 usage（通常在最后一个块）
-                    if chunk.get("usage"):
-                        result["usage"] = chunk["usage"]
+                    # 检查 finish_reason
                     if choice.get("finish_reason"):
                         result["finish_reason"] = choice["finish_reason"]
                 except:
@@ -431,6 +434,11 @@ class VLLMProxy:
             raw_path = raw_path[3:]
         url = f"{backend_url}/{raw_path}"
 
+        # 如果是流式请求，添加 stream_options 以获取 usage
+        request_body_copy = request_body.copy() if request_body else {}
+        if request_body_copy.get("stream", False) and "stream_options" not in request_body_copy:
+            request_body_copy["stream_options"] = {"include_usage": True}
+
         # 记录请求开始时间
         request_start = datetime.now()
 
@@ -439,7 +447,7 @@ class VLLMProxy:
                 async with session.request(
                     method=request.method,
                     url=url,
-                    json=request_body if request_body else None,
+                    json=request_body_copy if request_body_copy else None,
                     headers={k: v for k, v in headers.items() if k.lower() not in ['host', 'content-length']}
                 ) as resp:
                     content_type = resp.content_type

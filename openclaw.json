@@ -42,16 +42,24 @@
         "provider": "zai",
         "mode": "api_key"
       },
-      "vllm:default": {
-        "provider": "vllm",
-        "mode": "api_key"
-      },
       "vllm-5555:default": {
         "provider": "vllm-5555",
         "mode": "api_key"
       },
       "vllm-5557:default": {
         "provider": "vllm-5557",
+        "mode": "api_key"
+      },
+      "localproxy-8888:default": {
+        "provider": "localproxy-8888",
+        "mode": "api_key"
+      },
+      "localproxy-8889:default": {
+        "provider": "localproxy-8889",
+        "mode": "api_key"
+      },
+      "localproxy-8890:default": {
+        "provider": "localproxy-8890",
         "mode": "api_key"
       }
     }
@@ -317,13 +325,13 @@
       },
       "models": {
         "vllm-5555/qwen3.5-27b": {
-          "alias": "Qwen3.5-27B"
+          "alias": "Qwen3.5-27B (本地代理 8888)"
         },
         "vllm-5557/gemma-4-31b-it": {
-          "alias": "Gemma 4 31B IT"
+          "alias": "Gemma 4 31B IT (本地代理 8889)"
         },
         "custom-dashscope-aliyuncs-com/qwen3.5-plus": {
-          "alias": "Qwen3.5-Plus (阿里)"
+          "alias": "Qwen3.5-Plus (阿里云) (本地代理 8890)"
         },
         "zai/glm-5": {
           "alias": "GLM-5 (智谱)"

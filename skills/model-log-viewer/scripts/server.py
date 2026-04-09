@@ -803,7 +803,7 @@ class LogViewerHandler(SimpleHTTPRequestHandler):
             # 反转映射：port -> model_key
             port_to_model = {v: k for k, v in model_port_mapping.items()}
 
-            # 为每个端口生成 provider 配置
+            # 为每个端口生成 provider 配置，并同步更新 auth 和 agents
             for port_str, model_key in port_to_model.items():
                 port = int(port_str)
                 provider_name = f"localproxy-{port}"
@@ -812,6 +812,7 @@ class LogViewerHandler(SimpleHTTPRequestHandler):
                 model_info = all_models.get(model_key)
 
                 if model_info:
+                    # 1. 更新 models.providers
                     openclaw_config["models"]["providers"][provider_name] = {
                         "baseUrl": f"http://localhost:{port}/v1",
                         "apiKey": "not-needed",
@@ -821,6 +822,17 @@ class LogViewerHandler(SimpleHTTPRequestHandler):
                             "name": model_info["name"],
                             "api": "openai-completions"
                         }]
+                    }
+
+                    # 2. 更新 auth.profiles
+                    openclaw_config["auth"]["profiles"][f"{provider_name}:default"] = {
+                        "provider": provider_name,
+                        "mode": "api_key"
+                    }
+
+                    # 3. 更新 agents.defaults.models
+                    openclaw_config["agents"]["defaults"]["models"][model_key] = {
+                        "alias": f"{model_info['name']} (本地代理 {port})"
                     }
 
             # 写回 openclaw.json

@@ -1,5 +1,31 @@
 # 模型日志查看器 变更日志
 
+## v1.2.0 (2026-04-09)
+
+### 新增功能
+- **同步配置到 openclaw.json**：新增"同步到 openclaw.json"按钮
+  - 将当前启用的代理配置同步到 `~/.openclaw/openclaw.json`
+  - 自动更新 `models.providers`、`auth.profiles`、`agents.defaults.models`
+  - 同步后自动重启 OpenClaw Gateway
+
+### 修复问题
+- **配置清理逻辑**：同步时自动删除已停止代理的配置
+  - 删除 `models.providers` 中不再使用的 `localproxy-*` 提供者
+  - 删除 `auth.profiles` 中对应的认证配置
+  - 删除 `agents.defaults.models` 中无效的模型引用
+- **模型命名格式**：代理配置的 model.name 和 alias 现在包含端口号标识
+  - 格式：`{模型名称} ({端口号})`，如 `Qwen3.5-Plus (8890)`
+  - 便于在 OpenClaw UI 中区分不同端口的代理
+- **Gateway 重启等待时间**：从 1 秒增加到 11 秒
+  - 3 秒等待进程完全退出
+  - 8 秒等待服务完全启动
+
+### 技术改进
+- 修复同步逻辑中 `model_key` 生成格式（使用 `localproxy-{port}/{model-id}`）
+- 优化配置同步流程：先清理无效配置，再添加新配置
+
+---
+
 ## v1.1.0 (2026-04-09)
 
 ### 新增功能

@@ -802,24 +802,47 @@ class LogViewerHandler(SimpleHTTPRequestHandler):
 
             # 反转映射：port -> model_key
             port_to_model = {v: k for k, v in model_port_mapping.items()}
+            valid_model_keys = set(port_to_model.values())  # 有效的 model_key 集合
+
+            # 收集需要删除的旧 localproxy-* 配置
+            old_localproxy_names = {name for name in all_providers.keys() if name.startswith("localproxy-")}
+            to_remove = old_localproxy_names - set(port_to_model.keys())
+
+            # 删除不再使用的 localproxy-* 配置
+            for provider_name in sorted(to_remove):  # 排序保证一致性
+                # 1. 从 models.providers 删除
+                openclaw_config["models"]["providers"].pop(provider_name, None)
+                # 2. 从 auth.profiles 删除
+                openclaw_config["auth"]["profiles"].pop(f"{provider_name}:default", None)
+                # 3. 从 agents.defaults.models 删除对应的模型
+                for model in all_providers.get(provider_name, {}).get("models", []):
+                    model_key = f"{provider_name}/{model.get('id', '')}"
+                    openclaw_config["agents"]["defaults"]["models"].pop(model_key, None)
+
+            # 清理 agents.defaults.models 中所有无效的 localproxy-* 引用（即使 models.providers 中已不存在）
+            defaults_models = openclaw_config.get("agents", {}).get("defaults", {}).get("models", {})
+            for model_key in list(defaults_models.keys()):
+                if model_key.startswith("localproxy-") and model_key not in valid_model_keys:
+                    openclaw_config["agents"]["defaults"]["models"].pop(model_key, None)
 
             # 为每个端口生成 provider 配置，并同步更新 auth 和 agents
             for port_str, model_key in port_to_model.items():
                 port = int(port_str)
                 provider_name = f"localproxy-{port}"
+                localproxy_model_key = f"{provider_name}/{model_key.split('/')[1]}"  # 使用 localproxy-XXX/model-id 格式
 
                 # 获取模型信息
                 model_info = all_models.get(model_key)
 
                 if model_info:
-                    # 1. 更新 models.providers
+                    # 1. 更新 models.providers（model.name 包含端口号标识）
                     openclaw_config["models"]["providers"][provider_name] = {
                         "baseUrl": f"http://localhost:{port}/v1",
                         "apiKey": "not-needed",
                         "api": "openai-completions",
                         "models": [{
                             "id": model_info["model_id"],
-                            "name": model_info["name"],
+                            "name": f"{model_info['name']} ({port})",
                             "api": "openai-completions"
                         }]
                     }
@@ -830,9 +853,9 @@ class LogViewerHandler(SimpleHTTPRequestHandler):
                         "mode": "api_key"
                     }
 
-                    # 3. 更新 agents.defaults.models
-                    openclaw_config["agents"]["defaults"]["models"][model_key] = {
-                        "alias": f"{model_info['name']} (本地代理 {port})"
+                    # 3. 更新 agents.defaults.models（alias 包含端口号标识）
+                    openclaw_config["agents"]["defaults"]["models"][localproxy_model_key] = {
+                        "alias": f"{model_info['name']} ({port})"
                     }
 
             # 写回 openclaw.json
@@ -844,7 +867,7 @@ class LogViewerHandler(SimpleHTTPRequestHandler):
 
             self.send_json({
                 "success": True,
-                "message": f"已同步 {len(port_to_model)} 个代理配置到 openclaw.json",
+                "message": f"已同步 {len(port_to_model)} 个代理配置到 openclaw.json，删除了 {len(to_remove)} 个旧配置",
                 "restart": restart_result
             })
         except Exception as e:
@@ -853,9 +876,27 @@ class LogViewerHandler(SimpleHTTPRequestHandler):
     def restart_gateway(self):
         """重启 gateway"""
         try:
-            # 查找并停止 gateway 进程
-            subprocess.run("pkill -f 'openclaw.*gateway' || true", shell=True)
-            time.sleep(1)
+            import signal
+            # 查找 gateway 进程 ID
+            result = subprocess.run("pgrep -f 'openclaw-gateway'", shell=True, capture_output=True, text=True)
+            if result.stdout.strip():
+                pids = result.stdout.strip().split()
+                for pid in pids:
+                    try:
+                        os.kill(int(pid), signal.SIGTERM)
+                    except ProcessLookupError:
+                        pass
+                time.sleep(3)  # 等待 3 秒确保进程完全退出
+
+            # 重新启动 gateway
+            subprocess.Popen(
+                ["openclaw", "gateway"],
+                stdout=subprocess.DEVNULL,
+                stderr=subprocess.DEVNULL,
+                start_new_session=True,
+                cwd=str(Path.home())
+            )
+            time.sleep(8)  # 等待 8 秒确保服务完全启动
             return {"success": True, "message": "gateway 已重启"}
         except Exception as e:
             return {"success": False, "error": str(e)}

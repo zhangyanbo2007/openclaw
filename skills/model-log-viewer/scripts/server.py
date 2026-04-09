@@ -478,13 +478,14 @@ class LogViewerHandler(SimpleHTTPRequestHandler):
                 "role": "model",
                 "input": messages,  # 完整的输入消息
                 "output": "".join(output_parts),
-                "interval": "-",
+                "interval": interval_str,  # 使用实际计算的间隔
                 "model_info": {
                     "proxy_url": proxy_url,
                     "original_url": original_url,
                     "model": model_name,
                     "prompt_tokens": usage.get("prompt_tokens", 0),
-                    "completion_tokens": usage.get("completion_tokens", 0)
+                    "completion_tokens": usage.get("completion_tokens", 0),
+                    "total_tokens": usage.get("total_tokens", 0)
                 }
             })
 
@@ -548,8 +549,10 @@ class LogViewerHandler(SimpleHTTPRequestHandler):
                             <div style="white-space: pre-wrap; max-height: 500px; overflow-y: auto; font-size: 13px;">{escape_html(model_output)}</div>
                         </div>
                     </td>
-                    <td style="width: 100px;"><span class="tokens">{prompt_tokens}/{completion_tokens}</span></td>
-                    <td style="width: 70px;" class="interval">{interval}</td>
+                    <td style="width: 100px; vertical-align: middle; text-align: center;">
+                        <span class="tokens">{prompt_tokens}/{completion_tokens}</span>
+                    </td>
+                    <td style="width: 70px; vertical-align: middle; text-align: center;" class="interval">{interval}</td>
                 </tr>
             ''')
 
@@ -579,8 +582,8 @@ class LogViewerHandler(SimpleHTTPRequestHandler):
         .user-row {{ background: rgba(227, 242, 253, 0.3); }}
         .tool-row {{ background: rgba(243, 229, 245, 0.3); }}
         .model-row {{ background: rgba(224, 242, 241, 0.3); }}
-        .tokens {{ background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); padding: 4px 10px; border-radius: 12px; font-size: 12px; color: white; font-weight: 600; }}
-        .interval {{ color: #666; font-size: 12px; }}
+        .tokens {{ background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); padding: 6px 12px; border-radius: 12px; font-size: 12px; color: white; font-weight: 600; display: inline-block; min-width: 60px; text-align: center; }}
+        .interval {{ background: #e8eaf6; padding: 4px 8px; border-radius: 8px; font-size: 12px; color: #3f51b5; font-weight: 600; display: inline-block; min-width: 40px; text-align: center; }}
         .legend {{ display: flex; gap: 15px; margin-bottom: 15px; flex-wrap: wrap; }}
         .legend-item {{ display: flex; align-items: center; gap: 5px; font-size: 13px; color: white; }}
         .legend-color {{ width: 16px; height: 16px; border-radius: 4px; }}

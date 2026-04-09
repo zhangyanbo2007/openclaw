@@ -1,0 +1,40 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(git reset:*)",
+      "Bash(git rm:*)",
+      "Bash(git commit -m ':*)",
+      "Bash(git push:*)",
+      "Bash(pkill -f openclaw-gateway)",
+      "Bash(pkill -9 -f openclaw-gateway)",
+      "Bash(netstat -tlnp)",
+      "Bash(git commit:*)",
+      "Bash(bash start.sh 9001)",
+      "Read(//root/anaconda3/envs/model_proxy/bin/**)",
+      "Read(//root/anaconda3/**)",
+      "Read(//home/zhangyanbo/data/anaconda3/envs/**)",
+      "Read(//home/zhangyanbo/.conda/**)",
+      "Bash(~/anaconda3/bin/conda env:*)",
+      "Bash(~/anaconda3/bin/conda create:*)",
+      "Bash(/root/anaconda3/envs/model_proxy/bin/pip install:*)",
+      "Bash(~/anaconda3/bin/conda run:*)",
+      "Bash(pkill -f \"server.py.*9001\")",
+      "Bash(curl -s http://localhost:9001/)",
+      "Bash(pkill -f \"server.py\")",
+      "Bash(curl -s http://localhost:9001/api/proxy/status)",
+      "Read(//home/zhangyanbo/.agents/skills/**)",
+      "Bash(ln -s /home/zhangyanbo/.openclaw/model_viewer_system/logs /home/zhangyanbo/.openclaw/skills/model-log-viewer/scripts/logs)",
+      "Bash(kill 2328189)",
+      "Bash(pkill -9 -f \"server.py.*9001\")",
+      "Bash(pkill -9 -f \"server.py\")",
+      "Bash(curl -s http://localhost:9001/api/openclaw/models)",
+      "Bash(python3 -m json.tool)",
+      "Bash(python3 -c \"import sys,json; d=json.load\\(sys.stdin\\); print\\(f'Success: {d[\\\\\"success\\\\\"]}, Models: {len\\(d.get\\(\\\\\"models\\\\\",{}\\)\\)}'\\)\")"
+    ],
+    "additionalDirectories": [
+      "/home/zhangyanbo/.openclaw/.git",
+      "/home/zhangyanbo/.openclaw/workspace-fox-feishu/stock-dashboard/.git",
+      "/home/zhangyanbo/.openclaw/skills"
+    ]
+  }
+}

@@ -1,0 +1,832 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>OpenClaw AI算法架构深度解读</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', 'Microsoft YaHei', sans-serif;
+            line-height: 1.6;
+            color: #333;
+            background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+        }
+        
+        .slide {
+            min-height: 100vh;
+            padding: 40px 60px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            page-break-after: always;
+        }
+        
+        .cover-slide {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            text-align: center;
+        }
+        
+        .section-slide {
+            background: white;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+            margin: 20px;
+            border-radius: 10px;
+        }
+        
+        h1 {
+            font-size: 3.5em;
+            margin-bottom: 20px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+        }
+        
+        h2 {
+            font-size: 2.5em;
+            color: #667eea;
+            margin-bottom: 30px;
+            padding-bottom: 15px;
+            border-bottom: 3px solid #667eea;
+        }
+        
+        h3 {
+            font-size: 1.8em;
+            color: #764ba2;
+            margin: 25px 0 15px 0;
+        }
+        
+        .subtitle {
+            font-size: 1.8em;
+            margin-bottom: 30px;
+            opacity: 0.9;
+        }
+        
+        .meta-info {
+            font-size: 1.2em;
+            margin-top: 50px;
+            opacity: 0.8;
+        }
+        
+        .content-section {
+            margin-bottom: 30px;
+            padding-left: 20px;
+        }
+        
+        .algorithm-box {
+            background: #f8f9fa;
+            border-left: 4px solid #667eea;
+            padding: 20px;
+            margin: 15px 0;
+            border-radius: 0 8px 8px 0;
+        }
+        
+        .algorithm-title {
+            font-weight: bold;
+            color: #667eea;
+            margin-bottom: 10px;
+        }
+        
+        .code-block {
+            background: #2d3748;
+            color: #e2e8f0;
+            padding: 15px;
+            border-radius: 8px;
+            font-family: 'Consolas', monospace;
+            margin: 15px 0;
+            overflow-x: auto;
+        }
+        
+        .comparison-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 20px 0;
+        }
+        
+        .comparison-table th, .comparison-table td {
+            border: 1px solid #ddd;
+            padding: 12px;
+            text-align: left;
+        }
+        
+        .comparison-table th {
+            background: #667eea;
+            color: white;
+        }
+        
+        .comparison-table tr:nth-child(even) {
+            background: #f8f9fa;
+        }
+        
+        .feature-list {
+            list-style-type: none;
+            padding-left: 0;
+        }
+        
+        .feature-list li {
+            padding: 10px 0;
+            border-bottom: 1px solid #eee;
+            position: relative;
+            padding-left: 25px;
+        }
+        
+        .feature-list li:before {
+            content: "▸";
+            position: absolute;
+            left: 0;
+            color: #667eea;
+            font-weight: bold;
+        }
+        
+        .highlight {
+            background: linear-gradient(120deg, #a1c4fd 0%, #c2e9fb 100%);
+            padding: 3px 8px;
+            border-radius: 4px;
+            font-weight: bold;
+        }
+        
+        .architecture-diagram {
+            text-align: center;
+            margin: 30px 0;
+            padding: 20px;
+            background: #f0f4f8;
+            border-radius: 10px;
+        }
+        
+        .layer {
+            padding: 15px;
+            margin: 10px 0;
+            border-radius: 8px;
+            color: white;
+            font-weight: bold;
+        }
+        
+        .layer-1 { background: #667eea; }
+        .layer-2 { background: #764ba2; }
+        .layer-3 { background: #4facfe; }
+        .layer-4 { background: #00f2fe; }
+    </style>
+</head>
+<body>
+    <!-- 封面页 -->
+    <div class="slide cover-slide">
+        <h1>OpenClaw AI算法架构深度解读</h1>
+        <p class="subtitle">个人AI助手的算法设计与实现</p>
+        <div class="meta-info">
+            <p>演讲者：[你的名字]</p>
+            <p>日期：2026年3月</p>
+        </div>
+    </div>
+
+    <!-- 第一部分：OpenClaw整体架构概览 -->
+    <div class="slide section-slide">
+        <h2>第一部分：OpenClaw整体架构概览</h2>
+        
+        <div class="content-section">
+            <h3>1.1 OpenClaw是什么</h3>
+            <p>OpenClaw是一个<span class="highlight">本地优先的个人AI助手框架</span>，其核心目标是让智能体在用户设备上运行与进化。</p>
+            
+            <div class="algorithm-box">
+                <div class="algorithm-title">核心特点算法分析</div>
+                <ul class="feature-list">
+                    <li><strong>隐私保护算法</strong>：所有数据处理在本地完成，不依赖云端服务，避免数据泄露风险</li>
+                    <li><strong>可定制性算法</strong>：通过技能系统实现功能扩展，用户可根据需求添加或移除能力</li>
+                    <li><strong>可扩展性算法</strong>：模块化架构设计，支持从简单工具到复杂工作流的平滑扩展</li>
+                </ul>
+            </div>
+        </div>
+        
+        <div class="content-section">
+            <h3>1.2 系统架构分层</h3>
+            <div class="architecture-diagram">
+                <div class="layer layer-1">应用层：用户交互界面、技能调用</div>
+                <div class="layer layer-2">控制层(Pi Agent)：推理引擎、工具调用管理、状态管理</div>
+                <div class="layer layer-3">核心服务层：记忆系统、技能系统、会话管理</div>
+                <div class="layer layer-4">基础设施层：模型接口、工具接口、存储接口</div>
+            </div>
+            
+            <div class="algorithm-box">
+                <div class="algorithm-title">分层架构算法设计</div>
+                <p><strong>应用层算法</strong>：负责用户输入解析和输出渲染，实现自然语言到工具调用的转换</p>
+                <p><strong>控制层算法</strong>：核心决策单元，使用极简提示词压缩技术，实现高效推理</p>
+                <p><strong>服务层算法</strong>：提供状态持久化、技能管理和会话连续性的基础服务</p>
+                <p><strong>基础设施层算法</strong>：抽象底层实现，提供统一的接口供上层调用</p>
+            </div>
+        </div>
+        
+        <div class="content-section">
+            <h3>1.3 核心算法模块</h3>
+            
+            <div class="algorithm-box">
+                <div class="algorithm-title">推理引擎算法</div>
+                <p><strong>意图理解算法</strong>：使用LLM的语义理解能力，通过极简提示词引导，准确解析用户真实需求</p>
+                <p><strong>计划生成算法</strong>：基于自然语言指令和代码库探索，生成可执行的执行计划</p>
+                <p><strong>执行监督算法</strong>：完全可观测的执行过程，确保用户完全掌控操作流程</p>
+            </div>
+            
+            <div class="algorithm-box">
+                <div class="algorithm-title">工具调用算法</div>
+                <p><strong>决策算法</strong>：分析任务需求，评估可用工具，选择最合适的工具进行调用</p>
+                <p><strong>按需加载算法</strong>：仅在需要时加载工具定义，相比传统方案节省95%以上的token消耗</p>
+            </div>
+            
+            <div class="algorithm-box">
+                <div class="algorithm-title">记忆系统算法</div>
+                <p><strong>状态序列化算法</strong>：将状态保存到JSON/Markdown文件，支持断点续传</p>
+                <p><strong>上下文管理算法</strong>：每次从零开始探索代码库，避免过时信息问题</p>
+            </div>
+            
+            <div class="algorithm-box">
+                <div class="algorithm-title">技能系统算法</div>
+                <p><strong>技能发现算法</strong>：以CLI工具形式存在，按需读取技能文档</p>
+                <p><strong>技能调用算法</strong>：用户明确指令调用，确保完全可控的调用过程</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- 第二部分：核心控制层Pi的AI算法 -->
+    <div class="slide section-slide">
+        <h2>第二部分：核心控制层Pi的AI算法</h2>
+        
+        <div class="content-section">
+            <h3>2.1 Pi Agent的定位</h3>
+            <p>Pi Agent是OpenClaw系统的<span class="highlight">"大脑"</span>，负责所有agent的推理和工具调用。</p>
+            
+            <div class="algorithm-box">
+                <div class="algorithm-title">Pi Agent的核心职责算法</div>
+                <ul class="feature-list">
+                    <li><strong>意图解析算法</strong>：将用户自然语言输入转换为结构化任务描述</li>
+                    <li><strong>工具调度算法</strong>：根据任务需求，智能选择并调用合适的工具</li>
+                    <li><strong>状态维护算法</strong>：实时跟踪执行状态，支持断点续传</li>
+                    <li><strong>结果整合算法</strong>：将工具执行结果整合为用户友好的响应</li>
+                </ul>
+            </div>
+        </div>
+        
+        <div class="content-section">
+            <h3>2.2 提示词压缩算法</h3>
+            
+            <div class="algorithm-box">
+                <div class="algorithm-title">传统方案 vs Pi方案对比</div>
+                <table class="comparison-table">
+                    <tr>
+                        <th>方案</th>
+                        <th>提示词长度</th>
+                        <th>token消耗</th>
+                        <th>推理效率</th>
+                    </tr>
+                    <tr>
+                        <td>传统方案(Claude Code)</td>
+                        <td>10,000+ tokens</td>
+                        <td>高</td>
+                        <td>中等</td>
+                    </tr>
+                    <tr>
+                        <td>Pi方案</td>
+                        <td>< 1000 tokens</td>
+                        <td>极低</td>
+                        <td>高</td>
+                    </tr>
+                </table>
+            </div>
+            
+            <div class="algorithm-box">
+                <div class="algorithm-title">算法思想详解</div>
+                <p><strong>1. LLM作为通用计算机</strong>：将LLM视为"用自然语言编程的通用计算机"，而非对话系统</p>
+                <p><strong>2. Prompt作为代码</strong>：prompt不是对话，而是包含输入、状态、输出和控制流的代码</p>
+                <p><strong>3. 去除冗余描述</strong>：删除重复和不必要的说明，聚焦核心指令</p>
+                <p><strong>4. 利用推理能力</strong>：让模型自己推导细节，减少显式指令</p>
+            </div>
+            
+            <div class="algorithm-box">
+                <div class="algorithm-title">压缩策略算法</div>
+                <ol>
+                    <li><strong>去除冗余描述</strong>：分析提示词中的重复内容，删除不必要的说明</li>
+                    <li><strong>聚焦核心指令</strong>：只保留最关键的操作指引，去除装饰性内容</li>
+                    <li><strong>利用LLM推理能力</strong>：设计提示词引导模型自行推导执行细节</li>
+                </ol>
+            </div>
+        </div>
+        
+        <div class="content-section">
+            <h3>2.3 状态管理算法</h3>
+            
+            <div class="algorithm-box">
+                <div class="algorithm-title">核心思想：状态序列化到磁盘</div>
+                <div class="code-block">
+# 状态序列化算法流程
+输入 → JSON/Markdown文件 → 磁盘存储
+       ↓
+从任意断点重启 → 加载状态 → 继续执行
+                </div>
+            </div>
+            
+            <div class="algorithm-box">
+                <div class="algorithm-title">AI算法优势详解</div>
+                <ul class="feature-list">
+                    <li><strong>避免上下文衰减</strong>：状态持久化存储，不受对话轮次限制</li>
+                    <li><strong>支持断点续传</strong>：从任意位置继续执行，无需重新开始</li>
+                    <li><strong>允许全新上下文继续</strong>：不受历史状态限制，每次都是全新开始</li>
+                </ul>
+            </div>
+        </div>
+        
+        <div class="content-section">
+            <h3>2.4 推理循环算法</h3>
+            
+            <div class="algorithm-box">
+                <div class="algorithm-title">标准推理循环</div>
+                <ol>
+                    <li>接收用户输入</li>
+                    <li>生成推理过程</li>
+                    <li>决策是否调用工具</li>
+                    <li>执行工具调用</li>
+                    <li>整合结果</li>
+                    <li>生成响应</li>
+                </ol>
+            </div>
+            
+            <div class="algorithm-box">
+                <div class="algorithm-title">Pi的优化算法</div>
+                <ul class="feature-list">
+                    <li><strong>极简提示词减少干扰</strong>：减少上下文中的噪音信息</li>
+                    <li><strong>状态序列化保持一致性</strong>：确保每次推理基于相同的状态</li>
+                    <li><strong>完全可观测的推理过程</strong>：所有中间步骤对用户可见</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+
+    <!-- 第三部分：推理引擎算法 -->
+    <div class="slide section-slide">
+        <h2>第三部分：推理引擎算法</h2>
+        
+        <div class="content-section">
+            <h3>3.1 推理引擎的职责</h3>
+            
+            <div class="algorithm-box">
+                <div class="algorithm-title">推理引擎核心职责算法</div>
+                <ul class="feature-list">
+                    <li><strong>理解用户意图算法</strong>：分析用户输入的真实需求，识别隐含任务</li>
+                    <li><strong>制定执行计划算法</strong>：分解复杂任务，规划具体执行步骤</li>
+                    <li><strong>监督执行过程算法</strong>：跟踪任务执行状态，确保按计划进行</li>
+                    <li><strong>整合执行结果算法</strong>：汇总多个工具执行结果，生成最终响应</li>
+                </ul>
+            </div>
+        </div>
+        
+        <div class="content-section">
+            <h3>3.2 意图理解算法</h3>
+            
+            <div class="algorithm-box">
+                <div class="algorithm-title">Pi的意图理解方法</div>
+                <p><strong>直接利用LLM的语义理解能力</strong>：不依赖复杂的NLP预处理，直接使用LLM的理解能力</p>
+                <p><strong>极简提示词引导</strong>：用最少的指令引导模型理解用户意图</p>
+                <p><strong>上下文驱动的理解</strong>：结合对话历史和当前状态，准确理解用户需求</p>
+            </div>
+            
+            <div class="algorithm-box">
+                <div class="algorithm-title">算法优势分析</div>
+                <ul class="feature-list">
+                    <li><strong>减少预处理开销</strong>：无需复杂的NLP预处理流程</li>
+                    <li><strong>利用LLM的通用理解能力</strong>：模型本身就有强大的语义理解能力</li>
+                    <li><strong>保持灵活性</strong>：适应各种用户输入格式和表达方式</li>
+                </ul>
+            </div>
+        </div>
+        
+        <div class="content-section">
+            <h3>3.3 计划生成算法</h3>
+            
+            <div class="algorithm-box">
+                <div class="algorithm-title">Pi的计划生成方法</div>
+                <p><strong>自然语言指令替代plan mode</strong>：用简单的语言指令让模型生成计划</p>
+                <p><strong>/tree命令生成代码库摘要</strong>：探索代码库结构，了解当前状态</p>
+                <p><strong>基于摘要的计划生成</strong>：根据代码库现状制定具体的执行计划</p>
+            </div>
+            
+            <div class="algorithm-box">
+                <div class="algorithm-title">算法流程详解</div>
+                <ol>
+                    <li><strong>分析任务需求</strong>：理解用户要做什么，识别关键目标</li>
+                    <li><strong>探索代码库现状</strong>：使用/tree命令了解当前代码结构和状态</li>
+                    <li><strong>生成执行计划</strong>：制定具体的执行步骤和时间安排</li>
+                    <li><strong>计划序列化到PLAN.md</strong>：保存计划供后续使用和跟踪</li>
+                </ol>
+            </div>
+        </div>
+        
+        <div class="content-section">
+            <h3>3.4 执行监督算法</h3>
+            
+            <div class="algorithm-box">
+                <div class="algorithm-title">Pi的执行监督方法</div>
+                <p><strong>完全可观测的执行过程</strong>：所有操作都在用户面前进行，无隐藏步骤</p>
+                <p><strong>用户手动监督</strong>：用户可以随时查看和干预执行过程</p>
+                <p><strong>确定性执行</strong>：每次执行结果一致，可预测性强</p>
+            </div>
+            
+            <div class="algorithm-box">
+                <div class="algorithm-title">算法优势分析</div>
+                <ul class="feature-list">
+                    <li><strong>避免黑箱操作</strong>：所有过程可见，无隐藏逻辑</li>
+                    <li><strong>用户完全掌控</strong>：用户决定是否继续执行</li>
+                    <li><strong>错误可追溯</strong>：可以回溯到错误发生点，便于调试</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+
+    <!-- 第四部分：工具调用与决策算法 -->
+    <div class="slide section-slide">
+        <h2>第四部分：工具调用与决策算法</h2>
+        
+        <div class="content-section">
+            <h3>4.1 工具调用决策算法</h3>
+            
+            <div class="algorithm-box">
+                <div class="algorithm-title">核心问题：何时调用什么工具？</div>
+                <p>工具调用决策是AI助手的核心能力之一，需要准确判断任务需求和工具匹配度。</p>
+            </div>
+            
+            <div class="algorithm-box">
+                <div class="algorithm-title">Pi的决策算法流程</div>
+                <ol>
+                    <li><strong>分析任务需求</strong>：理解当前任务需要什么操作和输出</li>
+                    <li><strong>评估可用工具</strong>：检查有哪些工具可以使用，评估工具适用性</li>
+                    <li><strong>决策是否调用工具</strong>：判断是否需要工具辅助完成任务</li>
+                    <li><strong>选择具体工具</strong>：选择最合适的工具，考虑效率和准确性</li>
+                </ol>
+            </div>
+            
+            <div class="algorithm-box">
+                <div class="algorithm-title">算法特点</div>
+                <ul class="feature-list">
+                    <li><strong>基于自然语言理解</strong>：用自然语言描述工具功能，便于模型理解</li>
+                    <li><strong>极简工具集</strong>：4个核心工具(read/write/edit/bash)覆盖大部分需求</li>
+                    <li><strong>按需加载工具定义</strong>：需要时才读取工具文档，节省资源</li>
+                </ul>
+            </div>
+        </div>
+        
+        <div class="content-section">
+            <h3>4.2 工具集设计算法</h3>
+            
+            <div class="algorithm-box">
+                <div class="algorithm-title">Pi的4个核心工具</div>
+                <table class="comparison-table">
+                    <tr>
+                        <th>工具</th>
+                        <th>功能</th>
+                        <th>设计原则</th>
+                    </tr>
+                    <tr>
+                        <td>read</td>
+                        <td>读取文件内容</td>
+                        <td>获取文件信息的基础工具</td>
+                    </tr>
+                    <tr>
+                        <td>write</td>
+                        <td>创建或覆盖文件</td>
+                        <td>文件创建和写入的核心工具</td>
+                    </tr>
+                    <tr>
+                        <td>edit</td>
+                        <td>修改文件内容</td>
+                        <td>精确编辑文件的工具</td>
+                    </tr>
+                    <tr>
+                        <td>bash</td>
+                        <td>执行系统命令</td>
+                        <td>运行外部程序和命令的工具</td>
+                    </tr>
+                </table>
+            </div>
+            
+            <div class="algorithm-box">
+                <div class="algorithm-title">设计原则算法分析</div>
+                <ul class="feature-list">
+                    <li><strong>最小化工具数量</strong>：只保留最核心的工具，避免功能冗余</li>
+                    <li><strong>最大化工具通用性</strong>：每个工具都有广泛用途，覆盖多种场景</li>
+                    <li><strong>避免工具定义膨胀</strong>：不增加不必要的工具，保持系统简洁</li>
+                </ul>
+            </div>
+        </div>
+        
+        <div class="content-section">
+            <h3>4.3 按需加载算法</h3>
+            
+            <div class="algorithm-box">
+                <div class="algorithm-title">传统方法 vs Pi方法对比</div>
+                <table class="comparison-table">
+                    <tr>
+                        <th>方法</th>
+                        <th>加载方式</th>
+                        <th>token消耗</th>
+                        <th>效率</th>
+                    </tr>
+                    <tr>
+                        <td>传统方法</td>
+                        <td>一次性加载所有工具定义</td>
+                        <td>高(13,700 tokens)</td>
+                        <td>低</td>
+                    </tr>
+                    <tr>
+                        <td>Pi方法</td>
+                        <td>按需加载工具README</td>
+                        <td>极低(225 tokens)</td>
+                        <td>高</td>
+                    </tr>
+                </table>
+            </div>
+            
+            <div class="algorithm-box">
+                <div class="algorithm-title">按需加载算法流程</div>
+                <ol>
+                    <li><strong>agent需要某个工具</strong>：识别任务需要的工具功能</li>
+                    <li><strong>读取对应工具的README</strong>：获取工具的使用说明和接口定义</li>
+                    <li><strong>消耗token学习工具用法</strong>：模型学习如何正确使用该工具</li>
+                    <li><strong>用bash调用CLI工具</strong>：通过bash命令实际执行工具功能</li>
+                </ol>
+            </div>
+            
+            <div class="algorithm-box">
+                <div class="algorithm-title">性能对比分析</div>
+                <p><strong>Playwright MCP</strong>：13,700 tokens - 传统方案的token消耗</p>
+                <p><strong>Pi方案</strong>：225 tokens - 仅是MCP的1/60，大幅节省资源</p>
+                <p><strong>效率提升</strong>：按需加载避免了不必要的token消耗，提高了整体效率</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- 第五部分：记忆系统算法 -->
+    <div class="slide section-slide">
+        <h2>第五部分：记忆系统算法</h2>
+        
+        <div class="content-section">
+            <h3>5.1 记忆系统的职责</h3>
+            
+            <div class="algorithm-box">
+                <div class="algorithm-title">记忆系统核心职责</div>
+                <ul class="feature-list">
+                    <li><strong>存储用户偏好</strong>：记住用户的使用习惯和偏好设置</li>
+                    <li><strong>记住对话历史</strong>：维护对话的连续性和上下文</li>
+                    <li><strong>维护项目状态</strong>：跟踪项目进展和当前状态</li>
+                </ul>
+            </div>
+        </div>
+        
+        <div class="content-section">
+            <h3>5.2 记忆存储算法</h3>
+            
+            <div class="algorithm-box">
+                <div class="algorithm-title">Pi的记忆存储观点</div>
+                <p><strong>代码库就是source of truth</strong>：代码是最终的真相，不需要额外的记忆系统</p>
+                <p><strong>不需要额外的记忆系统</strong>：避免维护额外的信息层，减少复杂度</p>
+                <p><strong>让agent探索代码库当前状态</strong>：每次从零开始探索，确保信息的准确性</p>
+            </div>
+            
+            <div class="algorithm-box">
+                <div class="algorithm-title">算法优势分析</div>
+                <ul class="feature-list">
+                    <li><strong>避免信息不一致</strong>：代码库作为唯一真相源</li>
+                    <li><strong>减少维护成本</strong>：无需维护额外的记忆系统</li>
+                    <li><strong>确保信息准确性</strong>：每次探索都是基于最新状态</li>
+                </ul>
+            </div>
+        </div>
+        
+        <div class="content-section">
+            <h3>5.3 上下文管理算法</h3>
+            
+            <div class="algorithm-box">
+                <div class="algorithm-title">Pi的上下文管理方法</div>
+                <p><strong>每次从零开始探索</strong>：不依赖历史状态，每次都是全新的开始</p>
+                <p><strong>使用 /tree 命令生成摘要</strong>：快速了解代码库结构和当前状态</p>
+                <p><strong>基于当前状态工作</strong>：只基于最新的代码库状态进行操作</p>
+            </div>
+            
+            <div class="algorithm-box">
+                <div class="algorithm-title">算法优势分析</div>
+                <ul class="feature-list">
+                    <li><strong>避免过时信息</strong>：不依赖可能过时的历史信息</li>
+                    <li><strong>完全可观测</strong>：探索过程可见，用户可以监督</li>
+                    <li><strong>减少维护成本</strong>：无需维护复杂的状态同步机制</li>
+                </ul>
+            </div>
+        </div>
+        
+        <div class="content-section">
+            <h3>5.4 会话连续性算法</h3>
+            
+            <div class="algorithm-box">
+                <div class="algorithm-title">核心问题：如何在新会话中继续之前的工作？</div>
+                <p>会话连续性是AI助手的重要特性，需要确保用户可以在不同会话中继续之前的工作。</p>
+            </div>
+            
+            <div class="algorithm-box">
+                <div class="algorithm-title">Pi的解决方案算法</div>
+                <ol>
+                    <li><strong>会话结束时生成摘要</strong>：总结当前工作状态和进度</li>
+                    <li><strong>新会话加载摘要</strong>：恢复之前的工作状态</li>
+                    <li><strong>基于摘要继续工作</strong>：从断点继续执行，无需重新开始</li>
+                </ol>
+            </div>
+            
+            <div class="algorithm-box">
+                <div class="algorithm-title">算法特点</div>
+                <ul class="feature-list">
+                    <li><strong>简单有效</strong>：无需复杂的状态同步机制</li>
+                    <li><strong>避免复杂的状态同步</strong>：减少系统复杂度</li>
+                    <li><strong>用户可控</strong>：用户可以决定是否加载摘要</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+
+    <!-- 第六部分：技能系统算法 -->
+    <div class="slide section-slide">
+        <h2>第六部分：技能系统算法</h2>
+        
+        <div class="content-section">
+            <h3>6.1 技能系统的职责</h3>
+            
+            <div class="algorithm-box">
+                <div class="algorithm-title">技能系统核心职责</div>
+                <ul class="feature-list">
+                    <li><strong>扩展agent能力</strong>：通过技能增加agent的功能范围</li>
+                    <li><strong>管理技能调用</strong>：协调不同技能的使用和调用</li>
+                    <li><strong>维护技能生态</strong>：支持技能的创建、更新和分发</li>
+                </ul>
+            </div>
+        </div>
+        
+        <div class="content-section">
+            <h3>6.2 技能发现算法</h3>
+            
+            <div class="algorithm-box">
+                <div class="algorithm-title">Pi的技能发现方法</div>
+                <p><strong>技能以CLI工具形式存在</strong>：每个技能是一个可执行的命令行程序</p>
+                <p><strong>每个技能有README文档</strong>：描述技能功能、用法和接口</p>
+                <p><strong>agent按需读取技能文档</strong>：需要时才学习技能用法</p>
+            </div>
+            
+            <div class="algorithm-box">
+                <div class="algorithm-title">算法流程</div>
+                <ol>
+                    <li>识别任务需求，确定需要的技能功能</li>
+                    <li>搜索技能目录，找到匹配的技能</li>
+                    <li>读取技能的README文档</li>
+                    <li>学习技能用法和接口</li>
+                    <li>调用技能执行具体任务</li>
+                </ol>
+            </div>
+        </div>
+        
+        <div class="content-section">
+            <h3>6.3 技能调用算法</h3>
+            
+            <div class="algorithm-box">
+                <div class="algorithm-title">Pi的技能调用方法</div>
+                <p><strong>用户明确指令调用</strong>：用户直接告诉agent调用哪个技能</p>
+                <p><strong>agent理解指令并执行</strong>：agent理解用户指令并调用相应技能</p>
+                <p><strong>完全可观测的调用过程</strong>：调用过程在用户面前进行</p>
+            </div>
+            
+            <div class="algorithm-box">
+                <div class="algorithm-title">算法优势分析</div>
+                <ul class="feature-list">
+                    <li><strong>避免自动选择的错误</strong>：用户明确指定，减少错误选择</li>
+                    <li><strong>用户完全控制</strong>：用户决定调用哪个技能</li>
+                    <li><strong>调用过程可追溯</strong>：可以查看技能调用历史</li>
+                </ul>
+            </div>
+        </div>
+        
+        <div class="content-section">
+            <h3>6.4 技能扩展算法</h3>
+            
+            <div class="algorithm-box">
+                <div class="algorithm-title">核心问题：如何添加新技能？</div>
+                <p>技能扩展是OpenClaw框架的重要特性，需要简单有效的机制来添加新技能。</p>
+            </div>
+            
+            <div class="algorithm-box">
+                <div class="algorithm-title">Pi的解决方案算法</div>
+                <ol>
+                    <li><strong>编写CLI工具</strong>：用任意语言编写可执行程序</li>
+                    <li><strong>编写README文档</strong>：描述技能功能和用法</li>
+                    <li><strong>放入技能目录</strong>：将技能文件放到指定目录</li>
+                    <li><strong>agent按需加载</strong>：agent需要时读取技能文档</li>
+                </ol>
+            </div>
+            
+            <div class="algorithm-box">
+                <div class="algorithm-title">算法特点</div>
+                <ul class="feature-list">
+                    <li><strong>极简扩展机制</strong>：无需复杂的注册流程</li>
+                    <li><strong>避免复杂的技能注册</strong>：直接放入目录即可使用</li>
+                    <li><strong>支持任意语言编写的工具</strong>：不限制编程语言</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+
+    <!-- 第七部分：总结与展望 -->
+    <div class="slide section-slide">
+        <h2>第七部分：总结与展望</h2>
+        
+        <div class="content-section">
+            <h3>7.1 核心算法创新</h3>
+            
+            <div class="algorithm-box">
+                <div class="algorithm-title">五大核心算法创新</div>
+                <ol>
+                    <li><strong>极简提示词设计</strong>（< 1000 tokens）：大幅减少上下文消耗</li>
+                    <li><strong>状态序列化管理</strong>（解决上下文衰减）：支持断点续传</li>
+                    <li><strong>按需工具加载</strong>（大幅降低token消耗）：相比MCP的1/60</li>
+                    <li><strong>完全可观测推理</strong>（避免黑箱操作）：所有过程可见</li>
+                    <li><strong>探索式上下文收集</strong>（基于当前状态工作）：避免过时信息</li>
+                </ol>
+            </div>
+        </div>
+        
+        <div class="content-section">
+            <h3>7.2 算法设计哲学</h3>
+            
+            <div class="algorithm-box">
+                <div class="algorithm-title">OpenClaw的设计哲学</div>
+                <ul class="feature-list">
+                    <li><strong>做减法</strong>：去除冗余，聚焦核心功能</li>
+                    <li><strong>可观测性</strong>：所有过程可见可追溯</li>
+                    <li><strong>确定性</strong>：行为可预测、可控制</li>
+                    <li><strong>用户控制</strong>：用户决定需要什么功能</li>
+                </ul>
+            </div>
+        </div>
+        
+        <div class="content-section">
+            <h3>7.3 性能指标</h3>
+            
+            <div class="algorithm-box">
+                <div class="algorithm-title">关键性能指标</div>
+                <table class="comparison-table">
+                    <tr>
+                        <th>指标</th>
+                        <th>数值</th>
+                        <th>说明</th>
+                    </tr>
+                    <tr>
+                        <td>系统提示词</td>
+                        <td>< 1000 tokens</td>
+                        <td>极简设计，大幅减少上下文消耗</td>
+                    </tr>
+                    <tr>
+                        <td>工具消耗</td>
+                        <td>225 tokens</td>
+                        <td>相比MCP的1/60，效率提升显著</td>
+                    </tr>
+                    <tr>
+                        <td>GitHub stars</td>
+                        <td>24,000+</td>
+                        <td>社区认可，广泛采用</td>
+                    </tr>
+                    <tr>
+                        <td>Terminal Bench排名</td>
+                        <td>前五</td>
+                        <td>性能验证，业界领先</td>
+                    </tr>
+                </table>
+            </div>
+        </div>
+        
+        <div class="content-section">
+            <h3>7.4 未来展望</h3>
+            
+            <div class="algorithm-box">
+                <div class="algorithm-title">未来发展方向</div>
+                <ul class="feature-list">
+                    <li><strong>更多开发者采用极简主义框架</strong>：简化开发流程，降低学习成本</li>
+                    <li><strong>AI算法向"可预测性"方向发展</strong>：提高AI行为的可预测性和可控性</li>
+                    <li><strong>用户控制权回归</strong>：让用户决定AI的行为和功能</li>
+                    <li><strong>本地AI助手普及</strong>：隐私保护的本地AI助手成为主流</li>
+                </ul>
+            </div>
+        </div>
+        
+        <div class="content-section">
+            <h3>结束语</h3>
+            <div class="algorithm-box">
+                <div class="algorithm-title">OpenClaw的价值主张</div>
+                <p>OpenClaw通过创新的算法设计，实现了<span class="highlight">极简、高效、可控</span>的个人AI助手框架。</p>
+                <p>我们相信，未来的AI助手应该是<span class="highlight">本地优先、用户可控、隐私保护</span>的。</p>
+                <p>感谢您的聆听！</p>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

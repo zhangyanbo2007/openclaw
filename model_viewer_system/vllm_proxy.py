@@ -1,0 +1,442 @@
+#!/usr/bin/env python3
+"""
+vLLM HTTP 代理 - 捕获 OpenClaw/ClaudeCode 的完整输入输出
+支持流式 (SSE) 和非流式响应，支持基于时间窗口的会话关联
+支持多模型路由（根据 model 字段转发到不同 vLLM 后端）
+"""
+
+import json
+import hashlib
+import aiohttp
+from datetime import datetime
+from pathlib import Path
+from aiohttp import web
+import argparse
+from difflib import SequenceMatcher
+from typing import Dict, Optional
+
+
+class ConversationLogger:
+    def __init__(self, base_dir: str = "/code/project/deploy_model/logs"):
+        self.base_dir = Path(base_dir)
+        self.base_dir.mkdir(parents=True, exist_ok=True)
+        self.today_dir = self.base_dir / datetime.now().strftime("%Y-%m-%d")
+        self.today_dir.mkdir(exist_ok=True)
+
+        # 会话关联参数
+        self.time_window_seconds = 60  # 60 秒内的请求可能属于同一对话
+        self.similarity_threshold = 0.8  # system prompt 相似度阈值
+
+        # 内存中的会话缓存 {conversation_id: conversation_data}
+        self.active_conversations = {}
+
+    def calculate_similarity(self, a: str, b: str) -> float:
+        """计算两个字符串的相似度"""
+        if not a or not b:
+            return 0.0
+        return SequenceMatcher(None, a, b).ratio()
+
+    def get_system_prompt(self, messages: list) -> str:
+        """提取 system prompt"""
+        for msg in messages:
+            if isinstance(msg, dict) and msg.get('role') == 'system':
+                content = msg.get('content', '')
+                if isinstance(content, str):
+                    return content[:500]  # 只取前 500 字符
+        return ""
+
+    def get_user_id(self, messages: list) -> str:
+        """从消息中提取用户 ID (ou_xxx 格式)"""
+        import re
+        for msg in messages:
+            if isinstance(msg, dict):
+                content = msg.get('content', '')
+                # 处理 content 是列表的情况（多模态消息）
+                if isinstance(content, list):
+                    for item in content:
+                        if isinstance(item, dict) and 'text' in item:
+                            text_content = item.get('text', '')
+                            # 优先匹配 sender_id 或 id 字段中的 ou_xxx
+                            match = re.search(r'(?:sender_id|sender|id|label)"?:\s*"?(ou_[a-z0-9]+)"?', text_content)
+                            if match:
+                                return match.group(1)
+                            # 备用：匹配任何 ou_xxx
+                            match = re.search(r'ou_[a-z0-9]+', text_content)
+                            if match:
+                                return match.group()
+                # 处理 content 是字符串的情况
+                elif isinstance(content, str):
+                    # 优先匹配 sender_id 或 id 字段中的 ou_xxx
+                    match = re.search(r'(?:sender_id|sender|id|label)"?:\s*"?(ou_[a-z0-9]+)"?', content)
+                    if match:
+                        return match.group(1)
+                    # 备用：匹配任何 ou_xxx
+                    match = re.search(r'ou_[a-z0-9]+', content)
+                    if match:
+                        return match.group()
+        return "unknown"
+
+    def find_matching_conversation(self, client_ip: str, messages: list, system_prompt: str) -> str:
+        """
+        查找是否属于已有的对话
+        返回匹配的 conversation_id 或 None
+        """
+        now = datetime.now()
+
+        for conv_id, conv_data in list(self.active_conversations.items()):
+            # 1. 检查是否同一 IP
+            if conv_data['client_ip'] != client_ip:
+                continue
+
+            # 2. 检查是否超时
+            last_time = datetime.fromisoformat(conv_data['last_updated'])
+            time_diff = (now - last_time).total_seconds()
+            if time_diff > self.time_window_seconds:
+                # 超时会话，清理
+                del self.active_conversations[conv_id]
+                continue
+
+            # 3. 检查 system prompt 相似度
+            old_system = conv_data.get('system_prompt', '')
+            if old_system and system_prompt:
+                similarity = self.calculate_similarity(old_system, system_prompt)
+                if similarity >= self.similarity_threshold:
+                    return conv_id
+
+            # 4. 如果新请求是 tool 响应，说明是智能体工作流的一部分
+            last_msg = messages[-1] if messages else {}
+            if isinstance(last_msg, dict) and last_msg.get('role') == 'tool':
+                return conv_id
+
+        return None
+
+    def get_conversation_id(self, client_ip: str, messages: list, headers: dict) -> str:
+        """
+        生成或查找会话 ID
+        优先级：1. X-Session-ID 头 > 2. 用户 ID (ou_xxx) > 3. 时间窗口 + 相似度关联
+        """
+        # 尝试从请求头获取会话 ID
+        session_id = headers.get("x-session-id") or headers.get("x-request-id")
+        if session_id:
+            return f"session_{session_id}"
+
+        # 优先使用用户 ID 作为会话标识
+        user_id = self.get_user_id(messages)
+        if user_id != "unknown":
+            # 使用用户 ID + 日期作为会话 ID 基础
+            today = datetime.now().strftime("%Y%m%d")
+            base_conv_id = f"conv_{user_id}_{today}"
+
+            # 检查是否有已存在的子会话（智能体工作流场景）
+            now = datetime.now()
+            for conv_id, conv_data in list(self.active_conversations.items()):
+                if conv_id.startswith(base_conv_id):
+                    if conv_data['client_ip'] == client_ip:
+                        last_time = datetime.fromisoformat(conv_data['last_updated'])
+                        time_diff = (now - last_time).total_seconds()
+                        if time_diff <= self.time_window_seconds:
+                            return conv_id
+
+            # 创建新的子会话
+            conv_id = f"{base_conv_id}_{datetime.now().strftime('%H%M%S')}"
+            self.active_conversations[conv_id] = {
+                "client_ip": client_ip,
+                "user_id": user_id,
+                "system_prompt": self.get_system_prompt(messages),
+                "started_at": datetime.now().isoformat(),
+                "last_updated": datetime.now().isoformat()
+            }
+            return conv_id
+
+        # 无用户 ID 时，使用原有逻辑（时间窗口 + 相似度）
+        system_prompt = self.get_system_prompt(messages)
+        existing_conv = self.find_matching_conversation(client_ip, messages, system_prompt)
+        if existing_conv:
+            return existing_conv
+
+        # 创建新对话 ID
+        if not messages:
+            conv_id = f"conv_{datetime.now().strftime('%H%M%S_%f')}"
+        else:
+            first_msg = messages[0]
+            content = f"{first_msg.get('role', '')}:{str(first_msg.get('content', ''))[:100]}"
+            hash_id = hashlib.md5(content.encode()).hexdigest()[:12]
+            conv_id = f"conv_{hash_id}"
+
+        # 缓存会话信息
+        self.active_conversations[conv_id] = {
+            "client_ip": client_ip,
+            "system_prompt": system_prompt,
+            "started_at": datetime.now().isoformat(),
+            "last_updated": datetime.now().isoformat()
+        }
+
+        return conv_id
+
+    def identify_client(self, headers: dict) -> str:
+        ua = headers.get("user-agent", "").lower()
+        if "openclaw" in ua:
+            return "openclaw"
+        elif "claude" in ua or "anthropic" in ua:
+            return "claudecode"
+        elif "openai" in ua:
+            return "openai_sdk"
+        return "unknown"
+
+    def parse_sse_stream(self, sse_text: str) -> dict:
+        """解析 SSE 流，提取完整的响应内容"""
+        result = {"content": "", "reasoning": "", "usage": {}}
+        lines = sse_text.split("\n")
+
+        for line in lines:
+            if line.startswith("data: "):
+                data = line[6:]
+                if data == "[DONE]":
+                    break
+                try:
+                    chunk = json.loads(data)
+                    choice = chunk.get("choices", [{}])[0]
+                    delta = choice.get("delta", {})
+
+                    # 累加内容
+                    if delta.get("content"):
+                        result["content"] += delta["content"]
+                    if delta.get("reasoning"):
+                        result["reasoning"] += delta["reasoning"]
+
+                    # 获取 usage（通常在最后一个块）
+                    if chunk.get("usage"):
+                        result["usage"] = chunk["usage"]
+                    if choice.get("finish_reason"):
+                        result["finish_reason"] = choice["finish_reason"]
+                except:
+                    pass
+
+        return result
+
+    def log(self, client_ip: str, headers: dict, request_body: dict, response_data: dict,
+            endpoint: str, model_name: str, is_stream: bool = False):
+        messages = request_body.get("messages", [])
+        conv_id = self.get_conversation_id(client_ip, messages, headers)
+        user_id = self.get_user_id(messages)
+
+        # 更新会话最后活动时间
+        if conv_id in self.active_conversations:
+            self.active_conversations[conv_id]["last_updated"] = datetime.now().isoformat()
+
+        client = self.identify_client(headers)
+
+        conv_dir = self.today_dir / conv_id
+        conv_dir.mkdir(parents=True, exist_ok=True)
+
+        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S_%f")
+
+        # 根据是否流式处理响应
+        if is_stream:
+            content = response_data.get("content", "")
+            reasoning = response_data.get("reasoning", "")
+            usage = response_data.get("usage", {})
+            finish_reason = response_data.get("finish_reason", "")
+        else:
+            choice = response_data.get("choices", [{}])[0] if response_data.get("choices") else {}
+            message = choice.get("message", {})
+            content = message.get("content", "")
+            reasoning = message.get("reasoning", "")
+            usage = response_data.get("usage", {})
+            finish_reason = choice.get("finish_reason", "")
+
+        record = {
+            "timestamp": datetime.now().isoformat(),
+            "client_ip": client_ip,
+            "client": client,
+            "user_id": user_id,
+            "conversation_id": conv_id,
+            "endpoint": endpoint,
+            "model": model_name,
+            "is_stream": is_stream,
+            "request": {
+                "model": request_body.get("model", "unknown"),
+                "messages": request_body.get("messages", []),
+                "parameters": {k: v for k, v in request_body.items() if k not in ["model", "messages", "endpoint"]}
+            },
+            "response": {
+                "content": content,
+                "reasoning": reasoning,
+                "tool_calls": [],
+                "usage": usage,
+                "finish_reason": finish_reason
+            }
+        }
+
+        log_file = conv_dir / f"{timestamp}_{client}.json"
+        with open(log_file, "w", encoding="utf-8") as f:
+            json.dump(record, f, indent=2, ensure_ascii=False)
+
+        index_file = conv_dir / "index.json"
+        if index_file.exists():
+            with open(index_file, "r", encoding="utf-8") as f:
+                index = json.load(f)
+        else:
+            index = {
+                "conversation_id": conv_id,
+                "user_id": user_id,
+                "client": client,
+                "first_message": messages[0] if messages else None,
+                "started_at": record["timestamp"],
+                "requests": []
+            }
+
+        index["last_updated"] = record["timestamp"]
+        index["request_count"] = index.get("request_count", 0) + 1
+        index["requests"].append({
+            "timestamp": record["timestamp"],
+            "model": model_name,
+            "tokens": usage.get("total_tokens", 0),
+            "user_id": user_id
+        })
+
+        with open(index_file, "w", encoding="utf-8") as f:
+            json.dump(index, f, indent=2, ensure_ascii=False)
+
+        print(f"[{datetime.now().strftime('%H:%M:%S')}] {client_ip} | {client} | model={model_name} | conv={conv_id} | {endpoint} | stream={is_stream}")
+        return conv_id, log_file
+
+
+class VLLMProxy:
+    def __init__(self, config: dict):
+        self.models: Dict[str, dict] = config.get("models", {})
+        self.default_model = config.get("default_model")
+        self.logger = ConversationLogger(base_dir=config.get("logs_dir", "/code/project/deploy_model/logs"))
+        self.app = web.Application()
+
+        # 注册所有路由
+        self.app.router.add_route("*", "/{path:.*}", self.handle_request)
+
+        # 打印配置信息
+        print("=" * 60)
+        print("vLLM 多模型代理配置:")
+        print("-" * 60)
+        for name, info in self.models.items():
+            marker = " (default)" if name == self.default_model else ""
+            print(f"  {name}{marker}: {info['url']} - {info.get('name', '未命名')}")
+        print("-" * 60)
+        print(f"日志目录：{Path(self.logger.base_dir).absolute()}")
+        print("=" * 60)
+
+    def get_backend_url(self, model_name: str) -> Optional[str]:
+        """根据模型名获取后端 URL"""
+        if model_name in self.models:
+            return self.models[model_name]["url"]
+
+        # 尝试模糊匹配（去除版本号等）
+        model_lower = model_name.lower()
+        for name, info in self.models.items():
+            name_lower = name.lower().replace("-", "").replace("_", "")
+            model_clean = model_lower.replace("-", "").replace("_", "")
+            if name_lower in model_clean or model_clean in name_lower:
+                return info["url"]
+
+        # 返回默认模型
+        if self.default_model and self.default_model in self.models:
+            return self.models[self.default_model]["url"]
+
+        return None
+
+    async def handle_request(self, request: web.Request) -> web.Response:
+        client_ip = request.remote or "unknown"
+        headers = dict(request.headers)
+        path = request.match_info["path"]
+
+        request_body = {}
+        if request.can_read_body:
+            body_bytes = await request.read()
+            try:
+                request_body = json.loads(body_bytes.decode("utf-8"))
+            except:
+                pass
+
+        # 获取请求的模型名
+        requested_model = request_body.get("model", "")
+        backend_url = self.get_backend_url(requested_model)
+        used_model_name = requested_model if backend_url else "unknown"
+
+        if not backend_url:
+            return web.json_response({
+                "error": f"模型 '{requested_model}' 未配置，可用的模型：{list(self.models.keys())}"
+            }, status=400)
+
+        url = f"{backend_url}/{path}"
+
+        try:
+            async with aiohttp.ClientSession() as session:
+                async with session.request(
+                    method=request.method,
+                    url=url,
+                    json=request_body if request_body else None,
+                    headers={k: v for k, v in headers.items() if k.lower() not in ['host', 'content-length']}
+                ) as resp:
+                    content_type = resp.content_type
+
+                    # 检查是否流式响应
+                    is_stream = "text/event-stream" in content_type or request_body.get("stream", False)
+
+                    if is_stream:
+                        # 流式响应：读取完整文本后解析 SSE
+                        sse_text = await resp.text()
+                        response_data = self.logger.parse_sse_stream(sse_text)
+
+                        # 创建代理响应（流式返回）
+                        proxy_resp = web.StreamResponse(status=resp.status, headers={"Content-Type": "text/event-stream"})
+                        await proxy_resp.prepare(request)
+                        await proxy_resp.write(sse_text.encode())
+                        await proxy_resp.write_eof()
+                    else:
+                        # 非流式响应：JSON
+                        response_data = await resp.json()
+                        proxy_resp = web.json_response(response_data, status=resp.status)
+
+                    # 记录日志
+                    if path.startswith("v1/"):
+                        request_body_with_endpoint = {**request_body, "endpoint": f"/{path}"}
+                        self.logger.log(
+                            client_ip=client_ip,
+                            headers=headers,
+                            request_body=request_body_with_endpoint,
+                            response_data=response_data,
+                            endpoint=f"/{path}",
+                            model_name=used_model_name,
+                            is_stream=is_stream
+                        )
+
+                    return proxy_resp
+
+        except Exception as e:
+            return web.json_response({"error": str(e)}, status=500)
+
+
+def load_config(config_path: str) -> dict:
+    """加载配置文件"""
+    with open(config_path, 'r', encoding='utf-8') as f:
+        return json.load(f)
+
+
+def main():
+    parser = argparse.ArgumentParser(description="vLLM HTTP 代理 (支持多模型路由)")
+    parser.add_argument("--host", default="0.0.0.0", help="监听地址")
+    parser.add_argument("--port", type=int, default=8888, help="监听端口")
+    parser.add_argument("--config", default="proxy_config.json", help="配置文件路径")
+    args = parser.parse_args()
+
+    # 加载配置
+    config = load_config(args.config)
+    config["proxy_host"] = args.host
+    config["proxy_port"] = args.port
+
+    proxy = VLLMProxy(config)
+    print(f"\n代理服务启动：http://{args.host}:{args.port}")
+    print(f"日志目录：{Path(config.get('logs_dir', '/code/project/deploy_model/logs')).absolute()}\n")
+    web.run_app(proxy.app, host=args.host, port=args.port)
+
+
+if __name__ == "__main__":
+    main()

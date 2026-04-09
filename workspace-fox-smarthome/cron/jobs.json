@@ -1,0 +1,614 @@
+{
+  "version": 1,
+  "jobs": [
+    {
+      "id": "9b911fa3-7f30-42ae-ae4b-a3492945a941",
+      "agentId": "fox-smarthome",
+      "sessionKey": "agent:main:main",
+      "name": "每日早晨天气播报（主卧）- 狐狸智能管家",
+      "enabled": true,
+      "createdAtMs": 1773367443169,
+      "updatedAtMs": 1773963055991,
+      "schedule": {
+        "kind": "cron",
+        "expr": "30 7 * * *",
+        "tz": "Asia/Shanghai"
+      },
+      "sessionTarget": "isolated",
+      "wakeMode": "now",
+      "payload": {
+        "kind": "agentTurn",
+        "message": "现在是早上 7:30，请帮小王子做每日天气播报。\n\n步骤：\n1. 用 web_fetch 获取广州南沙今天天气：https://wttr.in/南沙，广州？format=j1\n2. 根据返回数据，组装一段简洁亲切的中文天气播报，包含：今天天气状况、温度范围、降水/湿度建议（如需要带伞等）。语气温暖，适合早晨。\n3. 用 exec 调用 Home Assistant TTS 将播报文字播放到主卧音箱：\n   curl -s -X POST \"$HA_URL/api/services/tts/speak\" \\\n     -H \"Authorization: Bearer $HA_TOKEN\" \\\n     -H \"Content-Type: application/json\" \\\n     -d '{\"entity_id\": \"tts.home_assistant_cloud\", \"media_player_entity_id\": \"media_player.xiaomi_lx06_46d3_play_control\", \"message\": \"<播报文字>\", \"language\": \"zh-CN\"}'\n4. 完成后简短回报播报内容。",
+        "timeoutSeconds": 120
+      },
+      "delivery": {
+        "mode": "announce",
+        "channel": "feishu",
+        "to": "user:ou_0671c63ec5781695e9ca1ec20c78f94e",
+        "bestEffort": false
+      },
+      "state": {
+        "nextRunAtMs": 1774049400000,
+        "lastRunAtMs": 1773963000025,
+        "lastRunStatus": "ok",
+        "lastStatus": "ok",
+        "lastDurationMs": 55966,
+        "lastDeliveryStatus": "delivered",
+        "consecutiveErrors": 0,
+        "lastDelivered": true
+      },
+      "deleteAfterRun": false
+    },
+    {
+      "id": "f0d5558e-e2ab-4ab3-a2a1-686f6a007ba9",
+      "agentId": "fox-smarthome",
+      "sessionKey": "agent:main:main",
+      "name": "入户门监控（每 15 分钟）- 狐狸智能管家",
+      "enabled": false,
+      "createdAtMs": 1773367582786,
+      "updatedAtMs": 1773710268839,
+      "schedule": {
+        "kind": "every",
+        "everyMs": 900000,
+        "anchorMs": 1773710268839
+      },
+      "sessionTarget": "isolated",
+      "wakeMode": "now",
+      "payload": {
+        "kind": "agentTurn",
+        "message": "请检查入户门传感器，看过去 15 分钟内有没有人来。\n\n步骤：\n1. 用 exec 查询最近 15 分钟的历史：\n```\ncurl -s \"$HA_URL/api/history/period/$(date -u -d '15 minutes ago' +%Y-%m-%dT%H:%M:%S.000Z)?filter_entity_id=binary_sensor.lumi_cn_719859620_acn001_contact_state_p_2_1&minimal_response=true\" -H \"Authorization: Bearer $HA_TOKEN\" | jq '.[0] | [.[] | select(.state == \"on\") | .last_changed]'\n```\n2. 如果返回列表不为空（有 `on` 状态记录），说明有人开过门，用 message tool 通知群聊（target=\"chat:oc_b23350a0074cc1db4fd6176331127182\"）：\"🚪 过去 15 分钟有人来过！门开时间：<时间列表，转换为北京时间>\"\n3. 如果没有开门记录，不做任何通知，直接回复 NO_NOTIFY 即可。",
+        "timeoutSeconds": 120
+      },
+      "delivery": {
+        "mode": "none"
+      },
+      "state": {
+        "lastRunAtMs": 1773707233137,
+        "lastRunStatus": "error",
+        "lastStatus": "error",
+        "lastDurationMs": 32912,
+        "lastDeliveryStatus": "not-delivered",
+        "consecutiveErrors": 10,
+        "lastDelivered": false,
+        "lastErrorReason": "rate_limit",
+        "lastDeliveryError": "⚠️ API rate limit reached. Please try again later.",
+        "lastError": "⚠️ API rate limit reached. Please try again later."
+      },
+      "deleteAfterRun": false
+    },
+    {
+      "id": "a1b2c3d4-1111-2222-3333-444455556666",
+      "agentId": "fox-smarthome",
+      "sessionKey": "agent:main:main",
+      "name": "每日晚间天气提醒 - 狐狸智能管家",
+      "enabled": true,
+      "createdAtMs": 1773561000000,
+      "updatedAtMs": 1773928920056,
+      "schedule": {
+        "kind": "cron",
+        "expr": "0 22 * * *",
+        "tz": "Asia/Shanghai"
+      },
+      "sessionTarget": "isolated",
+      "wakeMode": "now",
+      "payload": {
+        "kind": "agentTurn",
+        "message": "现在是晚上 10 点，请播报明天天气预报。\n\n步骤：\n1. 用 web_fetch 获取广州南沙明天天气：https://wttr.in/南沙，广州？format=j1\n2. 组装简洁的晚间天气提醒，包含：明天天气、温度、是否需要带伞、穿衣建议\n3. 用 TTS 播放到主卧音箱\n4. 完成后简短回报",
+        "timeoutSeconds": 120
+      },
+      "delivery": {
+        "mode": "announce",
+        "channel": "feishu",
+        "to": "user:ou_0671c63ec5781695e9ca1ec20c78f94e",
+        "bestEffort": false
+      },
+      "state": {
+        "consecutiveErrors": 4,
+        "nextRunAtMs": 1774015200000,
+        "lastRunAtMs": 1773928800032,
+        "lastRunStatus": "error",
+        "lastStatus": "error",
+        "lastDurationMs": 120024,
+        "lastDeliveryStatus": "unknown",
+        "lastErrorReason": "timeout",
+        "lastError": "cron: job execution timed out"
+      },
+      "deleteAfterRun": false
+    },
+    {
+      "id": "a1b2c3d4-1111-2222-3333-444455556667",
+      "agentId": "fox-smarthome",
+      "sessionKey": "agent:main:main",
+      "name": "工作日出门天气提醒 - 狐狸智能管家",
+      "enabled": true,
+      "createdAtMs": 1773561000000,
+      "updatedAtMs": 1773966645417,
+      "schedule": {
+        "kind": "cron",
+        "expr": "30 8 * * 1-5",
+        "tz": "Asia/Shanghai"
+      },
+      "sessionTarget": "isolated",
+      "wakeMode": "now",
+      "payload": {
+        "kind": "agentTurn",
+        "message": "现在是工作日早上 8:30，请做出门天气提醒。\n\n步骤：\n1. 获取当前天气\n2. 提醒是否需要带伞、穿衣建议\n3. 用 TTS 播放到主卧音箱\n4. 完成后简短回报",
+        "timeoutSeconds": 120
+      },
+      "delivery": {
+        "mode": "announce",
+        "channel": "feishu",
+        "to": "user:ou_0671c63ec5781695e9ca1ec20c78f94e",
+        "bestEffort": false
+      },
+      "state": {
+        "consecutiveErrors": 0,
+        "nextRunAtMs": 1774225800000,
+        "lastRunAtMs": 1773966600033,
+        "lastRunStatus": "ok",
+        "lastStatus": "ok",
+        "lastDurationMs": 45384,
+        "lastDeliveryStatus": "delivered",
+        "lastDelivered": true
+      },
+      "deleteAfterRun": false
+    },
+    {
+      "id": "a1b2c3d4-1111-2222-3333-444455556668",
+      "agentId": "fox-smarthome",
+      "sessionKey": "agent:main:main",
+      "name": "每日全屋清洁 - 狐狸智能管家",
+      "enabled": true,
+      "createdAtMs": 1773561000000,
+      "updatedAtMs": 1773974224046,
+      "schedule": {
+        "kind": "cron",
+        "expr": "0 10 * * *",
+        "tz": "Asia/Shanghai"
+      },
+      "sessionTarget": "isolated",
+      "wakeMode": "now",
+      "payload": {
+        "kind": "agentTurn",
+        "message": "现在是上午 10 点，请启动扫地机器人全屋清洁。\n\n步骤：\n1. 启动扫地机器人：vacuum.start\n2. 等待 1 分钟后检查状态\n3. 回报清洁状态和电量",
+        "timeoutSeconds": 120
+      },
+      "delivery": {
+        "mode": "announce",
+        "channel": "feishu",
+        "to": "user:ou_0671c63ec5781695e9ca1ec20c78f94e",
+        "bestEffort": false
+      },
+      "state": {
+        "consecutiveErrors": 5,
+        "nextRunAtMs": 1774058400000,
+        "lastRunAtMs": 1773974104017,
+        "lastRunStatus": "error",
+        "lastStatus": "error",
+        "lastDurationMs": 120029,
+        "lastErrorReason": "timeout",
+        "lastDeliveryStatus": "unknown",
+        "lastError": "Error: cron: job execution timed out"
+      },
+      "deleteAfterRun": false
+    },
+    {
+      "id": "a1b2c3d4-1111-2222-3333-444455556669",
+      "agentId": "fox-smarthome",
+      "sessionKey": "agent:main:main",
+      "name": "工作日客厅清洁 - 狐狸智能管家",
+      "enabled": true,
+      "createdAtMs": 1773561000000,
+      "updatedAtMs": 1773968580019,
+      "schedule": {
+        "kind": "cron",
+        "expr": "0 9 * * 1-5",
+        "tz": "Asia/Shanghai"
+      },
+      "sessionTarget": "isolated",
+      "wakeMode": "now",
+      "payload": {
+        "kind": "agentTurn",
+        "message": "现在是工作日早上 9 点，请清洁客厅。\n\n步骤：\n1. 发送房间清洁命令到客厅（房间 ID: 11）\n2. 等待 2 分钟后检查状态\n3. 回报清洁进度",
+        "timeoutSeconds": 180
+      },
+      "delivery": {
+        "mode": "announce",
+        "channel": "feishu",
+        "to": "user:ou_0671c63ec5781695e9ca1ec20c78f94e",
+        "bestEffort": false
+      },
+      "state": {
+        "consecutiveErrors": 5,
+        "nextRunAtMs": 1774227600000,
+        "lastRunAtMs": 1773968400016,
+        "lastRunStatus": "error",
+        "lastStatus": "error",
+        "lastDurationMs": 180003,
+        "lastErrorReason": "timeout",
+        "lastDeliveryStatus": "unknown",
+        "lastError": "cron: job execution timed out"
+      },
+      "deleteAfterRun": false
+    },
+    {
+      "id": "a1b2c3d4-1111-2222-3333-44445555666a",
+      "agentId": "fox-smarthome",
+      "sessionKey": "agent:main:main",
+      "name": "周末卧室清洁 - 狐狸智能管家",
+      "enabled": true,
+      "createdAtMs": 1773561000000,
+      "updatedAtMs": 1773561000000,
+      "schedule": {
+        "kind": "cron",
+        "expr": "0 11 * * 6,0",
+        "tz": "Asia/Shanghai"
+      },
+      "sessionTarget": "isolated",
+      "wakeMode": "now",
+      "payload": {
+        "kind": "agentTurn",
+        "message": "现在是周末上午 11 点，请清洁卧室。\n\n步骤：\n1. 发送房间清洁命令到主卧（房间 ID: 1）\n2. 等待 2 分钟后检查状态\n3. 回报清洁进度",
+        "timeoutSeconds": 180
+      },
+      "delivery": {
+        "mode": "announce",
+        "channel": "feishu",
+        "to": "user:ou_0671c63ec5781695e9ca1ec20c78f94e",
+        "bestEffort": false
+      },
+      "state": {
+        "consecutiveErrors": 0,
+        "nextRunAtMs": 1774062000000
+      },
+      "deleteAfterRun": false
+    },
+    {
+      "id": "a1b2c3d4-1111-2222-3333-44445555666b",
+      "agentId": "fox-smarthome",
+      "sessionKey": "agent:main:main",
+      "name": "每周耗材检查 - 狐狸智能管家",
+      "enabled": true,
+      "createdAtMs": 1773561000000,
+      "updatedAtMs": 1773623051865,
+      "schedule": {
+        "kind": "cron",
+        "expr": "0 9 * * 1",
+        "tz": "Asia/Shanghai"
+      },
+      "sessionTarget": "isolated",
+      "wakeMode": "now",
+      "payload": {
+        "kind": "agentTurn",
+        "message": "现在是周一早上 9 点，请检查扫地机器人耗材寿命。\n\n步骤：\n1. 查询各耗材传感器状态\n2. 如果有耗材低于 20%，提醒更换\n3. 发送耗材寿命报告到飞书",
+        "timeoutSeconds": 120
+      },
+      "delivery": {
+        "mode": "announce",
+        "channel": "feishu",
+        "to": "user:ou_0671c63ec5781695e9ca1ec20c78f94e",
+        "bestEffort": false
+      },
+      "state": {
+        "consecutiveErrors": 1,
+        "nextRunAtMs": 1774227600000,
+        "lastRunAtMs": 1773622980039,
+        "lastRunStatus": "error",
+        "lastStatus": "error",
+        "lastDurationMs": 71826,
+        "lastError": "AxiosError: Request failed with status code 500",
+        "lastDeliveryStatus": "unknown"
+      },
+      "deleteAfterRun": false
+    },
+    {
+      "id": "a1b2c3d4-1111-2222-3333-44445555666c",
+      "agentId": "fox-smarthome",
+      "sessionKey": "agent:main:main",
+      "name": "早晨开窗帘 - 狐狸智能管家",
+      "enabled": true,
+      "createdAtMs": 1773561000000,
+      "updatedAtMs": 1773963076656,
+      "schedule": {
+        "kind": "cron",
+        "expr": "30 7 * * *",
+        "tz": "Asia/Shanghai"
+      },
+      "sessionTarget": "isolated",
+      "wakeMode": "now",
+      "payload": {
+        "kind": "agentTurn",
+        "message": "现在是早上 7:30，请打开所有窗帘。\n\n步骤：\n1. 打开主卧布帘：cover.babai_cn_557741642_bb82mj_s_2\n2. 打开主卧纱帘：cover.babai_cn_557773468_bb82mj_s_2\n3. 打开阳台窗帘：cover.novo_cn_548672564_n21_s_2_curtain\n4. 打开餐厅窗帘：cover.babai_cn_557805889_190812_s_2\n5. 回报完成状态",
+        "timeoutSeconds": 60
+      },
+      "delivery": {
+        "mode": "announce",
+        "channel": "feishu",
+        "to": "user:ou_0671c63ec5781695e9ca1ec20c78f94e",
+        "bestEffort": false
+      },
+      "state": {
+        "consecutiveErrors": 0,
+        "nextRunAtMs": 1774049400000,
+        "lastRunAtMs": 1773963055991,
+        "lastRunStatus": "ok",
+        "lastStatus": "ok",
+        "lastDurationMs": 20665,
+        "lastDeliveryStatus": "delivered",
+        "lastDelivered": true
+      },
+      "deleteAfterRun": false
+    },
+    {
+      "id": "a1b2c3d4-1111-2222-3333-44445555666d",
+      "agentId": "fox-smarthome",
+      "sessionKey": "agent:main:main",
+      "name": "晚上关窗帘 - 狐狸智能管家",
+      "enabled": true,
+      "createdAtMs": 1773561000000,
+      "updatedAtMs": 1774234000000,
+      "schedule": {
+        "kind": "cron",
+        "expr": "30 18 * * *",
+        "tz": "Asia/Shanghai"
+      },
+      "sessionTarget": "isolated",
+      "wakeMode": "now",
+      "payload": {
+        "kind": "agentTurn",
+        "message": "现在是晚上 9 点，请关闭所有窗帘。\n\n步骤：\n1. 关闭主卧布帘：cover.babai_cn_557741642_bb82mj_s_2\n2. 关闭主卧纱帘：cover.babai_cn_557773468_bb82mj_s_2\n3. 关闭阳台窗帘：cover.novo_cn_548672564_n21_s_2_curtain\n4. 关闭餐厅窗帘：cover.babai_cn_557805889_190812_s_2\n5. 回报完成状态",
+        "timeoutSeconds": 120
+      },
+      "delivery": {
+        "mode": "announce",
+        "channel": "feishu",
+        "to": "user:ou_0671c63ec5781695e9ca1ec20c78f94e",
+        "bestEffort": false
+      },
+      "state": {
+        "consecutiveErrors": 0,
+        "nextRunAtMs": 1774011600000,
+        "lastRunAtMs": 1773925200057,
+        "lastRunStatus": "ok",
+        "lastStatus": "ok",
+        "lastDurationMs": 59769,
+        "lastDeliveryStatus": "delivered",
+        "lastDelivered": true
+      },
+      "deleteAfterRun": false
+    },
+    {
+      "id": "a1b2c3d4-1111-2222-3333-44445555666e",
+      "agentId": "fox-smarthome",
+      "sessionKey": "agent:main:main",
+      "name": "晚上开灯 - 狐狸智能管家",
+      "enabled": true,
+      "createdAtMs": 1773561000000,
+      "updatedAtMs": 1773916320069,
+      "schedule": {
+        "kind": "cron",
+        "expr": "30 18 * * *",
+        "tz": "Asia/Shanghai"
+      },
+      "sessionTarget": "isolated",
+      "wakeMode": "now",
+      "payload": {
+        "kind": "agentTurn",
+        "message": "现在是晚上 6:30，请打开客厅灯。\n\n步骤：\n1. 打开客厅灯\n2. 设置合适亮度（50%）\n3. 回报完成状态",
+        "timeoutSeconds": 120
+      },
+      "delivery": {
+        "mode": "announce",
+        "channel": "feishu",
+        "to": "user:ou_0671c63ec5781695e9ca1ec20c78f94e",
+        "bestEffort": false
+      },
+      "state": {
+        "consecutiveErrors": 1,
+        "nextRunAtMs": 1774002600000,
+        "lastRunAtMs": 1773916200014,
+        "lastRunStatus": "error",
+        "lastStatus": "error",
+        "lastDurationMs": 120055,
+        "lastDeliveryStatus": "unknown",
+        "lastError": "cron: job execution timed out",
+        "lastErrorReason": "timeout"
+      },
+      "deleteAfterRun": false
+    },
+    {
+      "id": "a1b2c3d4-1111-2222-3333-44445555666f",
+      "agentId": "fox-smarthome",
+      "sessionKey": "agent:main:main",
+      "name": "深夜关灯 - 狐狸智能管家",
+      "enabled": true,
+      "createdAtMs": 1773561000000,
+      "updatedAtMs": 1773932460047,
+      "schedule": {
+        "kind": "cron",
+        "expr": "0 23 * * *",
+        "tz": "Asia/Shanghai"
+      },
+      "sessionTarget": "isolated",
+      "wakeMode": "now",
+      "payload": {
+        "kind": "agentTurn",
+        "message": "现在是晚上 11 点，请关闭所有灯。\n\n步骤：\n1. 关闭所有灯光\n2. 回报完成状态",
+        "timeoutSeconds": 60
+      },
+      "delivery": {
+        "mode": "announce",
+        "channel": "feishu",
+        "to": "user:ou_0671c63ec5781695e9ca1ec20c78f94e",
+        "bestEffort": false
+      },
+      "state": {
+        "consecutiveErrors": 1,
+        "nextRunAtMs": 1774018800000,
+        "lastRunAtMs": 1773932400030,
+        "lastRunStatus": "error",
+        "lastStatus": "error",
+        "lastDurationMs": 60017,
+        "lastDeliveryStatus": "unknown",
+        "lastError": "cron: job execution timed out",
+        "lastErrorReason": "timeout"
+      },
+      "deleteAfterRun": false
+    },
+    {
+      "id": "a1b2c3d4-1111-2222-3333-444455556670",
+      "agentId": "fox-smarthome",
+      "sessionKey": "agent:main:main",
+      "name": "睡前开空调（主卧）- 狐狸智能管家",
+      "enabled": false,
+      "createdAtMs": 1773561000000,
+      "updatedAtMs": 1773669609437,
+      "schedule": {
+        "kind": "cron",
+        "expr": "0 22 * * *",
+        "tz": "Asia/Shanghai"
+      },
+      "sessionTarget": "isolated",
+      "wakeMode": "now",
+      "payload": {
+        "kind": "agentTurn",
+        "message": "现在是晚上 10 点，请根据主卧温度自动设置空调。\n\n步骤：\n1. 查询主卧空调自带温度或主卧温湿度传感器（找主卧房间的 sensor.miaomiaoc_cn_blt_3_*_t9_temperature）\n2. 将华氏度转换为摄氏度：℃ = (°F - 32) × 5/9\n3. 根据温度自动设置主卧空调：\n   - 如果温度 > 28℃：设为 26℃ 制冷模式\n   - 如果温度 24-28℃：设为 27℃ 制冷模式\n   - 如果温度 18-24℃：设为 25℃ 送风模式\n   - 如果温度 < 18℃：设为 26℃ 制热模式\n4. 只控制主卧空调：climate.xiaomi_cn_553580582_mt0\n5. 回报当前主卧温度（℃）和空调设置",
+        "timeoutSeconds": 60
+      },
+      "delivery": {
+        "mode": "announce",
+        "channel": "feishu",
+        "to": "user:ou_0671c63ec5781695e9ca1ec20c78f94e",
+        "bestEffort": false
+      },
+      "state": {
+        "consecutiveErrors": 2,
+        "lastRunAtMs": 1773669607532,
+        "lastRunStatus": "error",
+        "lastStatus": "error",
+        "lastDurationMs": 1905,
+        "lastDeliveryStatus": "delivered",
+        "lastError": "402 Your account balance is insufficient, this request has been blocked. Please recharge in time at https://***.com/*** to solve this issue and try again later.",
+        "lastDelivered": true
+      },
+      "deleteAfterRun": false
+    },
+    {
+      "id": "a1b2c3d4-1111-2222-3333-444455556671",
+      "agentId": "fox-smarthome",
+      "sessionKey": "agent:main:main",
+      "name": "起床关空调（主卧）- 狐狸智能管家",
+      "enabled": false,
+      "createdAtMs": 1773561000000,
+      "updatedAtMs": 1773703809293,
+      "schedule": {
+        "kind": "cron",
+        "expr": "30 7 * * *",
+        "tz": "Asia/Shanghai"
+      },
+      "sessionTarget": "isolated",
+      "wakeMode": "now",
+      "payload": {
+        "kind": "agentTurn",
+        "message": "现在是早上 7:30，请关闭主卧空调。\n\n步骤：\n1. 关闭主卧空调：climate.xiaomi_cn_553580582_mt0\n2. 回报主卧当前温度\n3. 回报完成状态",
+        "timeoutSeconds": 60
+      },
+      "delivery": {
+        "mode": "announce",
+        "channel": "feishu",
+        "to": "user:ou_0671c63ec5781695e9ca1ec20c78f94e",
+        "bestEffort": false
+      },
+      "state": {
+        "consecutiveErrors": 1,
+        "lastRunAtMs": 1773703808042,
+        "lastRunStatus": "error",
+        "lastStatus": "error",
+        "lastDurationMs": 1251,
+        "lastDelivered": true,
+        "lastDeliveryStatus": "delivered",
+        "lastError": "403 预扣费额度失败, 用户剩余额度: ＄0.127668, 需要预扣费额度: ＄0.153696 (request id: 20260317073008558846193BlxYx7pb)",
+        "lastErrorReason": "auth"
+      },
+      "deleteAfterRun": false
+    },
+    {
+      "id": "a1b2c3d4-1111-2222-3333-444455556672",
+      "agentId": "fox-smarthome",
+      "sessionKey": "agent:main:main",
+      "name": "空气质量检查 - 狐狸智能管家",
+      "enabled": true,
+      "createdAtMs": 1773561000000,
+      "updatedAtMs": 1773964860087,
+      "schedule": {
+        "kind": "cron",
+        "expr": "0 8 * * *",
+        "tz": "Asia/Shanghai"
+      },
+      "sessionTarget": "isolated",
+      "wakeMode": "now",
+      "payload": {
+        "kind": "agentTurn",
+        "message": "现在是早上 8 点，请检查室内空气质量。\n\n步骤：\n1. 查询 PM2.5 和 CO2 传感器数据\n2. 如果空气质量差，建议开新风/空气净化器\n3. 发送报告到飞书",
+        "timeoutSeconds": 60
+      },
+      "delivery": {
+        "mode": "announce",
+        "channel": "feishu",
+        "to": "user:ou_0671c63ec5781695e9ca1ec20c78f94e",
+        "bestEffort": false
+      },
+      "state": {
+        "consecutiveErrors": 5,
+        "nextRunAtMs": 1774051200000,
+        "lastRunAtMs": 1773964800026,
+        "lastRunStatus": "error",
+        "lastStatus": "error",
+        "lastDurationMs": 60061,
+        "lastErrorReason": "timeout",
+        "lastDeliveryStatus": "unknown",
+        "lastError": "cron: job execution timed out"
+      },
+      "deleteAfterRun": false
+    },
+    {
+      "id": "a1b2c3d4-1111-2222-3333-444455556673",
+      "agentId": "fox-smarthome",
+      "sessionKey": "agent:main:main",
+      "name": "门窗传感器检查 - 狐狸智能管家",
+      "enabled": true,
+      "createdAtMs": 1773561000000,
+      "updatedAtMs": 1773928980092,
+      "schedule": {
+        "kind": "cron",
+        "expr": "0 22 * * *",
+        "tz": "Asia/Shanghai"
+      },
+      "sessionTarget": "isolated",
+      "wakeMode": "now",
+      "payload": {
+        "kind": "agentTurn",
+        "message": "现在是晚上 10 点，请检查门窗是否关闭。\n\n步骤：\n1. 查询所有门窗传感器状态\n2. 如果有未关闭的，发送提醒\n3. 报告检查结果",
+        "timeoutSeconds": 60
+      },
+      "delivery": {
+        "mode": "announce",
+        "channel": "feishu",
+        "to": "user:ou_0671c63ec5781695e9ca1ec20c78f94e",
+        "bestEffort": false
+      },
+      "state": {
+        "consecutiveErrors": 5,
+        "nextRunAtMs": 1774015200000,
+        "lastRunAtMs": 1773928920071,
+        "lastRunStatus": "error",
+        "lastStatus": "error",
+        "lastDurationMs": 60021,
+        "lastDeliveryStatus": "unknown",
+        "lastErrorReason": "timeout",
+        "lastError": "cron: job execution timed out"
+      },
+      "deleteAfterRun": false
+    }
+  ]
+}

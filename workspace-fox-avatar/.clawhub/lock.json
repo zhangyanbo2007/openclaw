@@ -1,0 +1,29 @@
+{
+  "version": 1,
+  "skills": {
+    "stock-analysis": {
+      "version": "6.2.0",
+      "installedAt": 1773716938860
+    },
+    "skill-vetter": {
+      "version": "1.0.0",
+      "installedAt": 1773717257805
+    },
+    "summarize": {
+      "version": "1.0.0",
+      "installedAt": 1773717466072
+    },
+    "nano-pdf": {
+      "version": "1.0.0",
+      "installedAt": 1773719237734
+    },
+    "pdf-extract": {
+      "version": "1.0.0",
+      "installedAt": 1773719252380
+    },
+    "pdf-text-extractor": {
+      "version": "1.0.0",
+      "installedAt": 1773719257215
+    }
+  }
+}

@@ -1,0 +1,24 @@
+{
+  "proxy_port": 8888,
+  "proxy_host": "0.0.0.0",
+
+  "models": {
+    "qwen3.5-27b": {
+      "url": "http://localhost:5555",
+      "name": "Qwen3.5-27B 主模型 (GPU 5)"
+    },
+    "gemma-4-31b-it": {
+      "url": "http://localhost:5557",
+      "name": "Gemma-4-31B-IT 多模态 (GPU 6,7)"
+    }
+  },
+
+  "default_model": "qwen3.5-27b",
+
+  "logs_dir": "/home/zhangyanbo/.openclaw/model-logs",
+
+  "session": {
+    "time_window_seconds": 60,
+    "similarity_threshold": 0.8
+  }
+}

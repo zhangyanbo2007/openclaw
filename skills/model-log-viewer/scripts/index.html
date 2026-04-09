@@ -1,0 +1,1177 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>模型日志查看器</title>
+    <style>
+        :root {
+            --primary: #6366f1;
+            --primary-dark: #4f46e5;
+            --primary-light: #818cf8;
+            --success: #10b981;
+            --success-dark: #059669;
+            --danger: #ef4444;
+            --danger-dark: #dc2626;
+            --warning: #f59e0b;
+            --warning-dark: #d97706;
+            --slate-50: #f8fafc;
+            --slate-100: #f1f5f9;
+            --slate-200: #e2e8f0;
+            --slate-300: #cbd5e1;
+            --slate-400: #94a3b8;
+            --slate-500: #64748b;
+            --slate-600: #475569;
+            --slate-700: #334155;
+            --slate-800: #1e293b;
+            --slate-900: #0f172a;
+            --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
+            --shadow: 0 1px 3px 0 rgb(0 0 0 / 0.1), 0 1px 2px -1px rgb(0 0 0 / 0.1);
+            --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+            --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
+            --radius-sm: 6px;
+            --radius: 8px;
+            --radius-lg: 12px;
+            --radius-xl: 16px;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #f0f4ff 0%, #e8efff 50%, #f5f3ff 100%);
+            min-height: 100vh;
+            padding: 24px;
+            color: var(--slate-700);
+        }
+
+        .container {
+            max-width: 1600px;
+            margin: 0 auto;
+        }
+
+        h1 {
+            color: var(--slate-800);
+            margin-bottom: 24px;
+            font-size: 28px;
+            font-weight: 700;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        /* Drawer / 抽屉样式 */
+        .drawer {
+            background: white;
+            border-radius: var(--radius-lg);
+            margin-bottom: 20px;
+            box-shadow: var(--shadow-md);
+            overflow: hidden;
+            border: 1px solid var(--slate-200);
+        }
+
+        .drawer-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 18px 24px;
+            background: linear-gradient(135deg, var(--slate-50) 0%, #fafbff 100%);
+            border-bottom: 1px solid var(--slate-200);
+            cursor: pointer;
+            user-select: none;
+            transition: background 0.2s;
+        }
+
+        .drawer-header:hover {
+            background: linear-gradient(135deg, #f0f4ff 0%, #f5f3ff 100%);
+        }
+
+        .drawer-header h2 {
+            margin: 0;
+            font-size: 16px;
+            color: var(--slate-700);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-weight: 600;
+        }
+
+        .drawer-icon {
+            transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            font-size: 14px;
+        }
+
+        .drawer-icon.rotated {
+            transform: rotate(-90deg);
+        }
+
+        .drawer-content {
+            padding: 24px;
+            transition: max-height 0.4s cubic-bezier(0.4, 0, 0.2, 1), padding 0.3s ease, opacity 0.3s ease;
+            max-height: 2000px;
+            opacity: 1;
+        }
+
+        .drawer.collapsed .drawer-content {
+            max-height: 0;
+            padding: 0 24px;
+            opacity: 0;
+        }
+
+        .drawer.collapsed .drawer-icon {
+            transform: rotate(-90deg);
+        }
+
+        /* Controls 控制区样式 - 改进为两个 datetime 选择器 */
+        .controls {
+            background: white;
+            padding: 24px;
+            border-radius: var(--radius-lg);
+            margin-bottom: 20px;
+            box-shadow: var(--shadow-md);
+            border: 1px solid var(--slate-200);
+        }
+
+        .controls-row {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            flex-wrap: wrap;
+        }
+
+        .control-group {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .control-group label {
+            font-weight: 600;
+            color: var(--slate-600);
+            font-size: 14px;
+        }
+
+        .control-group input[type="datetime-local"],
+        .control-group input[type="time"] {
+            padding: 10px 14px;
+            border: 1.5px solid var(--slate-200);
+            border-radius: var(--radius);
+            font-size: 14px;
+            color: var(--slate-700);
+            background: white;
+            transition: all 0.2s;
+            font-family: inherit;
+        }
+
+        .control-group input[type="datetime-local"]:focus,
+        .control-group input[type="time"]:focus {
+            outline: none;
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
+        }
+
+        /* 按钮样式 */
+        .btn-group {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+            margin-bottom: 15px;
+        }
+
+        .btn {
+            padding: 10px 20px;
+            border: none;
+            border-radius: var(--radius);
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 600;
+            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .btn:hover {
+            transform: translateY(-1px);
+        }
+
+        .btn:active {
+            transform: translateY(0);
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
+            color: white;
+            box-shadow: var(--shadow-sm), 0 2px 4px rgba(99, 102, 241, 0.3);
+        }
+        .btn-primary:hover {
+            background: linear-gradient(135deg, var(--primary-dark) 0%, #4338ca 100%);
+            box-shadow: var(--shadow-md), 0 4px 8px rgba(99, 102, 241, 0.4);
+        }
+
+        .btn-success {
+            background: linear-gradient(135deg, var(--success) 0%, var(--success-dark) 100%);
+            color: white;
+            box-shadow: var(--shadow-sm), 0 2px 4px rgba(16, 185, 129, 0.3);
+        }
+        .btn-success:hover {
+            background: linear-gradient(135deg, var(--success-dark) 0%, #047857 100%);
+            box-shadow: var(--shadow-md), 0 4px 8px rgba(16, 185, 129, 0.4);
+        }
+
+        .btn-danger {
+            background: linear-gradient(135deg, var(--danger) 0%, var(--danger-dark) 100%);
+            color: white;
+            box-shadow: var(--shadow-sm), 0 2px 4px rgba(239, 68, 68, 0.3);
+        }
+        .btn-danger:hover {
+            background: linear-gradient(135deg, var(--danger-dark) 0%, #b91c1c 100%);
+            box-shadow: var(--shadow-md), 0 4px 8px rgba(239, 68, 68, 0.4);
+        }
+
+        .btn-warning {
+            background: linear-gradient(135deg, var(--warning) 0%, var(--warning-dark) 100%);
+            color: white;
+            box-shadow: var(--shadow-sm), 0 2px 4px rgba(245, 158, 11, 0.3);
+        }
+        .btn-warning:hover {
+            background: linear-gradient(135deg, var(--warning-dark) 0%, #b45309 100%);
+            box-shadow: var(--shadow-md), 0 4px 8px rgba(245, 158, 11, 0.4);
+        }
+
+        .btn-sm { padding: 6px 12px; font-size: 13px; }
+
+        /* 统计面板 - 4 列网格布局 */
+        .stats {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 16px;
+            margin-bottom: 20px;
+        }
+
+        .stat-card {
+            background: white;
+            padding: 24px;
+            border-radius: var(--radius-lg);
+            box-shadow: var(--shadow-md);
+            border: 1px solid var(--slate-200);
+            transition: all 0.2s;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .stat-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 3px;
+            background: linear-gradient(90deg, var(--primary) 0%, var(--primary-light) 100%);
+        }
+
+        .stat-card:nth-child(2)::before {
+            background: linear-gradient(90deg, var(--success) 0%, #34d399 100%);
+        }
+
+        .stat-card:nth-child(3)::before {
+            background: linear-gradient(90deg, var(--warning) 0%, #fbbf24 100%);
+        }
+
+        .stat-card:nth-child(4)::before {
+            background: linear-gradient(90deg, #8b5cf6 0%, #a78bfa 100%);
+        }
+
+        .stat-card:hover {
+            transform: translateY(-2px);
+            box-shadow: var(--shadow-lg);
+        }
+
+        .stat-value {
+            font-size: 32px;
+            font-weight: 700;
+            background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .stat-card:nth-child(2) .stat-value {
+            background: linear-gradient(135deg, var(--success) 0%, var(--success-dark) 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .stat-card:nth-child(3) .stat-value {
+            background: linear-gradient(135deg, var(--warning) 0%, var(--warning-dark) 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .stat-card:nth-child(4) .stat-value {
+            background: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .stat-label {
+            color: var(--slate-500);
+            font-size: 14px;
+            margin-top: 8px;
+            font-weight: 500;
+        }
+
+        /* 表格样式 - 优化列宽 */
+        .model-table, .conversation-table {
+            width: 100%;
+            border-collapse: collapse;
+            border-radius: var(--radius);
+            overflow: hidden;
+        }
+
+        .model-table th, .model-table td,
+        .conversation-table th, .conversation-table td {
+            padding: 14px 16px;
+            text-align: left;
+            border-bottom: 1px solid var(--slate-200);
+        }
+
+        .model-table th, .conversation-table th {
+            background: linear-gradient(135deg, var(--slate-50) 0%, #fafbff 100%);
+            color: var(--slate-600);
+            font-weight: 600;
+            font-size: 13px;
+            text-transform: uppercase;
+            letter-spacing: 0.025em;
+        }
+
+        .model-table tr:hover, .conversation-table tr:hover {
+            background: linear-gradient(90deg, rgba(99, 102, 241, 0.04) 0%, rgba(99, 102, 241, 0.02) 100%);
+        }
+
+        /* 状态点 */
+        .status-dot {
+            display: inline-block;
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            background: var(--slate-300);
+            margin-right: 8px;
+        }
+
+        .status-dot.active { background: var(--success); }
+        .status-dot.inactive { background: var(--danger); }
+
+        .port-badge {
+            display: inline-block;
+            padding: 4px 12px;
+            background: linear-gradient(135deg, var(--slate-100) 0%, var(--slate-200) 100%);
+            border-radius: 16px;
+            font-size: 13px;
+            color: var(--slate-700);
+            font-weight: 600;
+        }
+
+        .status-text {
+            font-size: 13px;
+            font-weight: 600;
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+        }
+        .status-running { color: var(--success); }
+        .status-stopped { color: var(--danger); }
+
+        .provider-badge {
+            display: inline-block;
+            padding: 3px 10px;
+            background: linear-gradient(135deg, #dbeafe 0%, #bfdbfe 100%);
+            border-radius: 16px;
+            font-size: 11px;
+            color: var(--primary-dark);
+            font-weight: 600;
+        }
+
+        .model-name {
+            font-weight: 600;
+            color: var(--slate-700);
+        }
+
+        .model-url {
+            font-size: 12px;
+            color: var(--slate-400);
+            word-break: break-all;
+        }
+
+        .alert {
+            padding: 14px 18px;
+            border-radius: var(--radius);
+            margin-bottom: 15px;
+            font-weight: 500;
+        }
+        .alert-success {
+            background: linear-gradient(135deg, #d1fae5 0%, #a7f3d0 100%);
+            color: #065f46;
+            border: 1px solid #6ee7b7;
+        }
+        .alert-error {
+            background: linear-gradient(135deg, #fee2e2 0%, #fecaca 100%);
+            color: #991b1b;
+            border: 1px solid #fca5a5;
+        }
+        .alert-info {
+            background: linear-gradient(135deg, #dbeafe 0%, #bfdbfe 100%);
+            color: #1e40af;
+            border: 1px solid #93c5fd;
+        }
+
+        .sync-result {
+            margin-top: 15px;
+            padding: 15px;
+            background: var(--slate-50);
+            border-radius: var(--radius);
+            display: none;
+        }
+
+        .sync-result.show { display: block; }
+
+        .checkbox-cell {
+            width: 60px;
+            text-align: center;
+        }
+
+        input[type="checkbox"] {
+            width: 18px;
+            height: 18px;
+            cursor: pointer;
+            accent-color: var(--primary);
+        }
+
+        .action-cell {
+            width: 120px;
+            text-align: center;
+        }
+
+        .port-cell {
+            width: 100px;
+        }
+
+        .url-cell {
+            width: auto;
+            min-width: 200px;
+        }
+
+        .provider-group {
+            background: var(--slate-50);
+            padding: 16px;
+            border-radius: var(--radius);
+            margin-bottom: 16px;
+            border: 1px solid var(--slate-200);
+        }
+
+        .provider-group-header {
+            font-weight: 700;
+            color: var(--primary);
+            margin-bottom: 12px;
+            font-size: 15px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        /* 模型表格优化列宽 */
+        .model-table th:nth-child(1), .model-table td:nth-child(1) { width: 60px; text-align: center; } /* 启用 checkbox */
+        .model-table th:nth-child(2), .model-table td:nth-child(2) { width: 25%; } /* 模型名称 */
+        .model-table th:nth-child(3), .model-table td:nth-child(3) { width: 35%; } /* 后端 URL */
+        .model-table th:nth-child(4), .model-table td:nth-child(4) { width: 100px; } /* 代理端口 */
+        .model-table th:nth-child(5), .model-table td:nth-child(5) { width: 120px; text-align: center; } /* 状态 */
+
+        .table-container {
+            background: white;
+            border-radius: var(--radius-lg);
+            box-shadow: var(--shadow-md);
+            border: 1px solid var(--slate-200);
+            overflow: hidden;
+        }
+
+        .view-btn {
+            padding: 6px 14px;
+            background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
+            color: white;
+            border: none;
+            border-radius: var(--radius);
+            cursor: pointer;
+            font-size: 13px;
+            font-weight: 600;
+            transition: all 0.2s;
+        }
+
+        .view-btn:hover {
+            background: linear-gradient(135deg, var(--primary-dark) 0%, #4338ca 100%);
+            box-shadow: var(--shadow-md);
+            transform: translateY(-1px);
+        }
+
+        .no-data {
+            text-align: center;
+            padding: 60px 20px;
+            color: var(--slate-400);
+            font-size: 15px;
+        }
+
+        /* 响应式设计 */
+        @media (max-width: 1200px) {
+            .stats {
+                grid-template-columns: repeat(2, 1fr);
+            }
+        }
+
+        @media (max-width: 768px) {
+            body {
+                padding: 16px;
+            }
+
+            h1 {
+                font-size: 22px;
+            }
+
+            .controls-row {
+                flex-direction: column;
+                align-items: stretch;
+            }
+
+            .control-group {
+                flex-direction: column;
+                align-items: stretch;
+            }
+
+            .control-group input[type="datetime-local"],
+            .control-group input[type="time"] {
+                width: 100%;
+            }
+
+            .stats {
+                grid-template-columns: 1fr;
+            }
+
+            .drawer-header {
+                flex-direction: column;
+                gap: 12px;
+                align-items: flex-start;
+            }
+
+            .btn-group {
+                width: 100%;
+            }
+
+            .btn {
+                flex: 1;
+                justify-content: center;
+            }
+
+            .model-table, .conversation-table {
+                font-size: 13px;
+            }
+
+            .model-table th, .model-table td,
+            .conversation-table th, .conversation-table td {
+                padding: 10px 8px;
+            }
+        }
+
+        .conv-id {
+            font-family: 'SF Mono', 'Monaco', 'Inconsolata', monospace;
+            font-size: 13px;
+            color: var(--primary);
+            font-weight: 600;
+        }
+
+        .user-id {
+            font-family: 'SF Mono', 'Monaco', 'Inconsolata', monospace;
+            font-size: 12px;
+            color: var(--slate-500);
+        }
+
+        .time-cell {
+            color: var(--slate-500);
+            font-size: 13px;
+        }
+
+        .tokens-badge {
+            display: inline-block;
+            padding: 4px 10px;
+            background: linear-gradient(135deg, #dbeafe 0%, #bfdbfe 100%);
+            border-radius: 16px;
+            font-size: 12px;
+            color: var(--primary-dark);
+            font-weight: 600;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>📋 模型日志查看器</h1>
+
+        <!-- 模型本地代理配置 -->
+        <div class="drawer" id="modelConfigDrawer">
+            <div class="drawer-header" onclick="toggleDrawer()">
+                <h2><span class="drawer-icon" id="drawerIcon">▼</span> ⚙️ 模型本地代理配置</h2>
+                <div class="btn-group" style="margin: 0;" onclick="event.stopPropagation()">
+                    <button class="btn btn-success" onclick="enableAllModels()">▶ 全部启用</button>
+                    <button class="btn btn-danger" onclick="disableAllModels()">◼ 全部关闭</button>
+                    <button class="btn btn-warning" onclick="syncToOpenclaw()">🔄 同步到 openclaw.json</button>
+                </div>
+            </div>
+            <div class="drawer-content" id="modelList">
+                <div style="color: #888;">加载中...</div>
+            </div>
+            <div id="syncResult" class="sync-result"></div>
+        </div>
+
+        <!-- 日志筛选控制 - 使用两个 datetime-local 选择器 -->
+        <div class="controls">
+            <div class="controls-row">
+                <div class="control-group">
+                    <label for="datetimeStart">📅 开始日期时间</label>
+                    <input type="datetime-local" id="datetimeStart">
+                </div>
+
+                <div class="control-group">
+                    <label for="datetimeEnd">📅 结束日期时间</label>
+                    <input type="datetime-local" id="datetimeEnd">
+                </div>
+
+                <button class="btn btn-primary" onclick="loadConversations()">🔍 加载日志</button>
+                <button class="btn btn-success" onclick="exportExcel()">📊 导出 Excel</button>
+            </div>
+        </div>
+
+        <!-- 统计面板 -->
+        <div id="statsArea" class="stats" style="display:none;">
+            <div class="stat-card">
+                <div class="stat-value" id="statConversations">0</div>
+                <div class="stat-label">会话数</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value" id="statRequests">0</div>
+                <div class="stat-label">总请求数</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value" id="statUsers">0</div>
+                <div class="stat-label">用户数</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value" id="statTokens">0</div>
+                <div class="stat-label">总 Token</div>
+            </div>
+        </div>
+
+        <!-- 会话列表 -->
+        <div class="table-container">
+            <table id="conversationsTable" style="display:none;" class="conversation-table">
+                <thead>
+                    <tr>
+                        <th style="width: 200px;">会话 ID</th>
+                        <th style="width: 150px;">用户 ID</th>
+                        <th style="width: 80px;">请求数</th>
+                        <th style="width: 160px;">开始时间</th>
+                        <th style="width: 160px;">最后更新</th>
+                        <th style="width: 100px;">总 Token</th>
+                        <th style="width: 120px;">操作</th>
+                    </tr>
+                </thead>
+                <tbody id="conversationsBody"></tbody>
+            </table>
+        </div>
+
+        <div id="noData" class="no-data">请选择日期并点击"加载日志"</div>
+    </div>
+
+    <script>
+        // ========== 模型代理配置相关 ==========
+        let proxyConfig = null;
+        let openclawModels = {};
+        let currentPortMapping = {};
+        let drawerOpen = true;
+
+        function toggleDrawer() {
+            if (drawerOpen) {
+                closeDrawer();
+            } else {
+                openDrawer();
+            }
+        }
+
+        function closeDrawer() {
+            document.getElementById('modelConfigDrawer').classList.add('collapsed');
+            document.getElementById('drawerIcon').classList.add('rotated');
+            drawerOpen = false;
+            localStorage.setItem('modelConfigDrawerOpen', 'false');
+        }
+
+        function openDrawer() {
+            document.getElementById('modelConfigDrawer').classList.remove('collapsed');
+            document.getElementById('drawerIcon').classList.remove('rotated');
+            drawerOpen = true;
+            localStorage.setItem('modelConfigDrawerOpen', 'true');
+        }
+
+        async function enableAllModels() {
+            document.querySelectorAll('.model-checkbox').forEach(cb => cb.checked = true);
+            const usedPorts = new Set(Object.values(currentPortMapping));
+            let nextPort = 8888;
+            for (const modelKey of Object.keys(openclawModels)) {
+                if (!currentPortMapping[modelKey]) {
+                    while (usedPorts.has(nextPort)) nextPort++;
+                    currentPortMapping[modelKey] = nextPort;
+                    usedPorts.add(nextPort);
+                }
+            }
+            await saveConfigAndStart();
+        }
+
+        async function disableAllModels() {
+            document.querySelectorAll('.model-checkbox').forEach(cb => cb.checked = false);
+            const ports = [...new Set(Object.values(currentPortMapping))];
+            for (const port of ports) {
+                try {
+                    await fetch('/api/proxy/stop', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ port: parseInt(port) })
+                    });
+                } catch (e) {}
+            }
+            currentPortMapping = {};
+            await saveTempConfig();
+            renderModelList();
+            showAlert('已停止所有代理服务', 'success');
+        }
+
+        async function onModelToggle(modelKey, enabled) {
+            if (enabled) {
+                const usedPorts = new Set(Object.values(currentPortMapping));
+                let nextPort = 8888;
+                while (usedPorts.has(nextPort)) nextPort++;
+                currentPortMapping[modelKey] = nextPort;
+                await saveTempConfig();
+                try {
+                    const response = await fetch('/api/proxy/start', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ port: parseInt(nextPort), config: 'proxy_config.json' })
+                    });
+                    const result = await response.json();
+                    if (!result.success) {
+                        delete currentPortMapping[modelKey];
+                        await saveTempConfig();
+                        showAlert('启动失败：' + (result.error || '未知错误'), 'error');
+                    } else {
+                        showAlert('正在启动代理，请稍候...', 'info');
+                    }
+                } catch (e) {
+                    delete currentPortMapping[modelKey];
+                    await saveTempConfig();
+                    showAlert('启动失败：' + e.message, 'error');
+                }
+            } else {
+                const port = currentPortMapping[modelKey];
+                if (port) {
+                    try {
+                        await fetch('/api/proxy/stop', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ port: parseInt(port) })
+                        });
+                        showAlert('正在停止代理...', 'info');
+                    } catch (e) {}
+                }
+                delete currentPortMapping[modelKey];
+                await saveTempConfig();
+            }
+            // 延迟后检查状态并刷新显示
+            setTimeout(async () => {
+                await checkStatus();
+            }, 1000);
+        }
+
+        async function loadConfig() {
+            try {
+                const response = await fetch('/api/proxy/config');
+                const result = await response.json();
+                if (result.success) {
+                    proxyConfig = result.config;
+                    currentPortMapping = proxyConfig.model_port_mapping || {};
+                }
+            } catch (e) {
+                console.error('Failed to load config:', e);
+            }
+        }
+
+        async function loadOpenclawModels() {
+            try {
+                const response = await fetch('/api/openclaw/models');
+                const result = await response.json();
+                if (result.success) {
+                    openclawModels = result.models;
+                    renderModelList();
+                } else {
+                    document.getElementById('modelList').innerHTML =
+                        `<div style="color: #dc3545;">加载失败：${result.error}</div>`;
+                }
+            } catch (e) {
+                document.getElementById('modelList').innerHTML =
+                    `<div style="color: #dc3545;">加载失败：${e.message}</div>`;
+            }
+        }
+
+        function renderModelList() {
+            const container = document.getElementById('modelList');
+            const modelKeys = Object.keys(openclawModels);
+            if (modelKeys.length === 0) {
+                container.innerHTML = '<div style="color: #888;">未找到模型配置</div>';
+                return;
+            }
+
+            // 按 provider 分组
+            const grouped = {};
+            for (const [key, info] of Object.entries(openclawModels)) {
+                const provider = info.provider || 'unknown';
+                if (!grouped[provider]) grouped[provider] = [];
+                grouped[provider].push({ key, ...info });
+            }
+
+            // 分配端口
+            const usedPorts = new Set(Object.values(currentPortMapping));
+            let nextPort = 8888;
+            function getNextAvailablePort() {
+                while (usedPorts.has(nextPort)) nextPort++;
+                usedPorts.add(nextPort);
+                return nextPort;
+            }
+
+            let html = '';
+            for (const [provider, models] of Object.entries(grouped)) {
+                html += `
+                    <div class="provider-group">
+                        <div class="provider-group-header">📦 ${escapeHtml(provider)}</div>
+                        <table class="model-table">
+                            <thead>
+                                <tr>
+                                    <th class="checkbox-cell">启用</th>
+                                    <th>模型名称</th>
+                                    <th>后端 URL</th>
+                                    <th>代理端口</th>
+                                    <th class="action-cell">状态</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                `;
+
+                for (const model of models) {
+                    const modelKey = model.key;
+                    let configuredPort = currentPortMapping[modelKey];
+                    // 统一转为数字类型
+                    if (configuredPort) {
+                        configuredPort = Number(configuredPort);
+                    }
+                    const port = configuredPort || getNextAvailablePort();
+                    const portKey = String(port);
+                    const portStatus = window.proxyStatus?.[portKey] || { running: false };
+                    const isChecked = !!configuredPort;
+
+                    html += `
+                        <tr data-model-key="${escapeHtml(modelKey)}" data-port="${port}">
+                            <td class="checkbox-cell">
+                                <input type="checkbox" class="model-checkbox"
+                                       data-model-key="${escapeHtml(modelKey)}"
+                                       ${isChecked ? 'checked' : ''}
+                                       onchange="onModelToggle('${escapeHtml(modelKey)}', this.checked)">
+                            </td>
+                            <td><span class="model-name">${escapeHtml(model.name)}</span></td>
+                            <td class="model-url">${escapeHtml(model.url)}</td>
+                            <td class="port-cell">
+                                ${configuredPort ? `<span class="port-badge">${configuredPort}</span>` : '<span style="color:#888;">未启用</span>'}
+                            </td>
+                            <td class="action-cell">
+                                ${portStatus.running ? '<span class="status-text status-running">🟢 运行中</span>' :
+                                  (configuredPort ? '<span class="status-text status-stopped">🔴 未启动</span>' : '<span style="color:#888;">-</span>')}
+                            </td>
+                        </tr>
+                    `;
+                }
+
+                html += `
+                            </tbody>
+                        </table>
+                    </div>
+                `;
+            }
+
+            container.innerHTML = html;
+        }
+
+        async function saveTempConfig() {
+            const config = {
+                enabled_models: Object.keys(currentPortMapping),
+                model_port_mapping: currentPortMapping,
+                logs_dir: proxyConfig?.logs_dir || "/code/project/deploy_model/logs",
+                session: proxyConfig?.session || { time_window_seconds: 60, similarity_threshold: 0.8 }
+            };
+            try {
+                await fetch('/api/proxy/save_config', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(config)
+                });
+            } catch (e) {
+                console.error('Failed to save config:', e);
+            }
+        }
+
+        async function saveConfigAndStart() {
+            const config = {
+                enabled_models: Object.keys(currentPortMapping),
+                model_port_mapping: currentPortMapping,
+                logs_dir: proxyConfig?.logs_dir || "/code/project/deploy_model/logs",
+                session: proxyConfig?.session || { time_window_seconds: 60, similarity_threshold: 0.8 }
+            };
+            try {
+                const saveResponse = await fetch('/api/proxy/save_config', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(config)
+                });
+                const saveResult = await saveResponse.json();
+                if (!saveResult.success) {
+                    showAlert(`保存配置失败：${saveResult.error}`, 'error');
+                    return;
+                }
+                const ports = Object.values(currentPortMapping);
+                const uniquePorts = [...new Set(ports)];
+                let startedCount = 0;
+                for (const port of uniquePorts) {
+                    try {
+                        const response = await fetch('/api/proxy/start', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ port: parseInt(port), config: 'proxy_config.json' })
+                        });
+                        const result = await response.json();
+                        if (result.success) startedCount++;
+                    } catch (e) {
+                        console.error(`Failed to start port ${port}:`, e);
+                    }
+                }
+                showAlert(`✓ 已启动 ${startedCount} 个代理服务`, 'success');
+                setTimeout(() => { checkStatus(); renderModelList(); }, 1000);
+            } catch (e) {
+                showAlert(`启动失败：${e.message}`, 'error');
+            }
+        }
+
+        async function syncToOpenclaw() {
+            const confirmMsg = Object.keys(currentPortMapping).length > 0
+                ? `确定要将 ${Object.keys(currentPortMapping).length} 个代理配置同步到 openclaw.json 并重启 gateway 吗？`
+                : '确定要同步配置到 openclaw.json 并重启 gateway 吗？';
+            if (!confirm(confirmMsg)) return;
+            const resultDiv = document.getElementById('syncResult');
+            resultDiv.className = 'sync-result show';
+            resultDiv.innerHTML = '<div class="alert alert-info">正在同步配置并重启 gateway...</div>';
+            try {
+                const response = await fetch('/api/sync', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({})
+                });
+                const result = await response.json();
+                if (result.success) {
+                    resultDiv.innerHTML = `
+                        <div class="alert alert-success">✓ ${result.message}</div>
+                        <div style="color: #666; font-size: 14px;">${JSON.stringify(result.restart, null, 2)}</div>
+                    `;
+                } else {
+                    resultDiv.innerHTML = `<div class="alert alert-error">✗ 同步失败：${result.error}</div>`;
+                }
+            } catch (e) {
+                resultDiv.innerHTML = `<div class="alert alert-error">✗ 同步失败：${e.message}</div>`;
+            }
+            setTimeout(() => { resultDiv.className = 'sync-result'; }, 5000);
+        }
+
+        async function checkStatus() {
+            try {
+                const response = await fetch('/api/proxy/status');
+                const result = await response.json();
+                if (result.success) {
+                    window.proxyStatus = result.status || {};
+                    console.log('Proxy status loaded:', window.proxyStatus);
+                    // 状态更新后总是重新渲染模型列表
+                    renderModelList();
+                }
+            } catch (e) {
+                console.error('Status check failed:', e);
+            }
+        }
+
+        function showAlert(message, type = 'info') {
+            const alertDiv = document.createElement('div');
+            alertDiv.className = `alert alert-${type}`;
+            alertDiv.textContent = message;
+            document.querySelector('.container').insertBefore(alertDiv, document.getElementById('modelConfigDrawer'));
+            setTimeout(() => alertDiv.remove(), 5000);
+        }
+
+        function escapeHtml(text) {
+            if (!text) return '';
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+
+        // ========== 日志查看相关 ==========
+        let currentConversations = [];
+        let currentRequests = [];
+
+        // 初始化日期时间选择器 - 使用两个 datetime-local 输入
+        function initDateSelect() {
+            const now = new Date();
+            const today = now.toISOString().split('T')[0];
+
+            const datetimeStart = document.getElementById('datetimeStart');
+            const datetimeEnd = document.getElementById('datetimeEnd');
+
+            // 默认开始时间为当天 00:00
+            datetimeStart.value = `${today}T00:00`;
+
+            // 默认结束时间为当天 23:59
+            datetimeEnd.value = `${today}T23:59`;
+        }
+
+        async function loadConversations() {
+            const datetimeStart = document.getElementById('datetimeStart').value;
+            const datetimeEnd = document.getElementById('datetimeEnd').value;
+
+            if (!datetimeStart || !datetimeEnd) {
+                alert('请选择开始和结束日期时间');
+                return;
+            }
+
+            console.log('Loading conversations:', { datetimeStart, datetimeEnd });
+
+            try {
+                // 直接从输入值解析，避免时区转换问题
+                // datetimeStart 格式：2026-04-08T00:00
+                const date = datetimeStart.split('T')[0]; // 2026-04-08
+                const timeStart = datetimeStart.split('T')[1]; // 00:00
+                const timeEnd = datetimeEnd.split('T')[1]; // 23:59
+
+                console.log('Parsed:', { date, timeStart, timeEnd });
+
+                const url = `/api/conversations?date=${date}&start=${timeStart}&end=${timeEnd}`;
+                console.log('Fetching:', url);
+
+                const resp = await fetch(url);
+                console.log('Response status:', resp.status);
+
+                const result = await resp.json();
+                // 处理 API 返回格式 {success: true, conversations: [...]}
+                const data = result.conversations || result;
+                console.log('Received data:', data.length, 'conversations');
+
+                currentConversations = data;
+
+                // 获取详细请求数据用于导出
+                const excelUrl = `/api/requests?date=${date}&start=${timeStart}&end=${timeEnd}`;
+                const excelResp = await fetch(excelUrl);
+                const excelResult = await excelResp.json();
+                // 处理 API 返回格式 {success: true, requests: [...]}
+                currentRequests = excelResult.requests || excelResult;
+
+                if (data.length === 0) {
+                    document.getElementById('noData').style.display = 'block';
+                    document.getElementById('conversationsTable').style.display = 'none';
+                    document.getElementById('statsArea').style.display = 'none';
+                    alert('暂无数据');
+                    return;
+                }
+
+                // 更新统计
+                const totalRequests = data.reduce((sum, c) => sum + c.request_count, 0);
+                const uniqueUsers = new Set(data.map(c => c.user_id)).size;
+                const totalTokens = data.reduce((sum, c) => sum + c.total_tokens, 0);
+
+                document.getElementById('statConversations').textContent = data.length;
+                document.getElementById('statRequests').textContent = totalRequests;
+                document.getElementById('statUsers').textContent = uniqueUsers;
+                document.getElementById('statTokens').textContent = totalTokens;
+
+                document.getElementById('statsArea').style.display = 'grid';
+                document.getElementById('noData').style.display = 'none';
+                document.getElementById('conversationsTable').style.display = 'table';
+
+                const tbody = document.getElementById('conversationsBody');
+                tbody.innerHTML = data.map(c => `
+                    <tr>
+                        <td><span class="conv-id">${escapeHtml(c.conversation_id)}</span></td>
+                        <td><span class="user-id">${escapeHtml(c.user_id)}</span></td>
+                        <td>${c.request_count}</td>
+                        <td class="time-cell">${escapeHtml(c.started_at)}</td>
+                        <td class="time-cell">${escapeHtml(c.last_updated)}</td>
+                        <td><span class="tokens-badge">${c.total_tokens}</span></td>
+                        <td><button class="view-btn" onclick="viewDetail('${escapeHtml(c.conversation_id)}')">📄 详情</button></td>
+                    </tr>
+                `).join('');
+                console.log('Rendered table successfully');
+            } catch (e) {
+                console.error('Failed to load conversations:', e);
+                alert('加载失败：' + e.message);
+            }
+        }
+
+        function viewDetail(convId) {
+            const datetimeStart = document.getElementById('datetimeStart').value;
+            // 直接解析输入值，避免时区问题
+            const date = datetimeStart.split('T')[0];
+            window.location.href = `/detail?date=${date}&conv_id=${convId}`;
+        }
+
+        function exportExcel() {
+            const datetimeStart = document.getElementById('datetimeStart').value;
+            const datetimeEnd = document.getElementById('datetimeEnd').value;
+
+            if (!datetimeStart || !datetimeEnd) {
+                alert('请先选择日期时间范围');
+                return;
+            }
+
+            // 直接解析输入值，避免时区问题
+            const date = datetimeStart.split('T')[0];
+            const timeStart = datetimeStart.split('T')[1];
+            const timeEnd = datetimeEnd.split('T')[1];
+
+            // 直接下载 Excel 文件
+            window.location.href = `/api/export/excel?date=${date}&start=${timeStart}&end=${timeEnd}`;
+        }
+
+        // ========== 页面加载 ==========
+        window.onload = function() {
+            // 恢复抽屉状态
+            const savedState = localStorage.getItem('modelConfigDrawerOpen');
+            if (savedState === 'false') {
+                closeDrawer();
+            }
+            // 按顺序初始化：先加载配置，再加载模型，最后检查状态
+            loadConfig().then(() => {
+                loadOpenclawModels().then(() => {
+                    checkStatus();
+                });
+            });
+            initDateSelect();
+        };
+    </script>
+</body>
+</html>

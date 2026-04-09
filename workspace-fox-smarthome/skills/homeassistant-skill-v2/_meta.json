@@ -1,0 +1,7 @@
+{
+  "name": "homeassistant-skill-v2",
+  "version": "2.2.0",
+  "author": "小王子",
+  "created": "2026-03-12",
+  "based_on": "homeassistant-skill v2.1.0"
+}

@@ -1,0 +1,272 @@
+/* ===== 重置与基础样式 ===== */
+*, *::before, *::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+:root {
+  --red:     #e84040;   /* A股涨色 */
+  --green:   #1cb454;   /* A股跌色 */
+  --bg:      #0d1117;
+  --surface: #161b22;
+  --border:  #30363d;
+  --text:    #e6edf3;
+  --muted:   #8b949e;
+  --gold:    #f0b429;
+  --accent:  #1f6feb;
+}
+
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "Hiragino Sans GB",
+               "Microsoft YaHei", sans-serif;
+  min-height: 100vh;
+  padding-bottom: 2rem;
+}
+
+/* ===== 顶部导航 ===== */
+header {
+  background: var(--surface);
+  border-bottom: 1px solid var(--border);
+  padding: 1rem 1.5rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  backdrop-filter: blur(8px);
+}
+
+.logo {
+  font-size: 1.2rem;
+  font-weight: 700;
+  color: var(--text);
+  letter-spacing: 0.02em;
+}
+
+.logo span {
+  color: var(--red);
+}
+
+.update-time {
+  font-size: 0.78rem;
+  color: var(--muted);
+}
+
+/* ===== 主容器 ===== */
+main {
+  max-width: 1100px;
+  margin: 2rem auto;
+  padding: 0 1rem;
+}
+
+/* ===== 副标题区 ===== */
+.section-title {
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  margin-bottom: 1.2rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.section-title::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: var(--border);
+}
+
+/* ===== 卡片网格 ===== */
+.grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+  gap: 1rem;
+}
+
+/* ===== 单张股票卡片 ===== */
+.card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 1.2rem 1.4rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.85rem;
+  transition: border-color 0.2s, transform 0.15s;
+  position: relative;
+  overflow: hidden;
+}
+
+.card:hover {
+  border-color: var(--accent);
+  transform: translateY(-2px);
+}
+
+/* 排名角标 */
+.rank-badge {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 2.4rem;
+  height: 2.4rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.8rem;
+  font-weight: 700;
+  border-bottom-right-radius: 10px;
+}
+
+.rank-badge.top1 { background: var(--gold);      color: #000; }
+.rank-badge.top2 { background: #adb5bd;           color: #000; }
+.rank-badge.top3 { background: #cd7f32;           color: #fff; }
+.rank-badge      { background: var(--border);     color: var(--muted); }
+
+/* 卡片头部 */
+.card-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  padding-left: 2rem; /* 避免被排名角标遮住 */
+}
+
+.stock-name {
+  font-size: 1.05rem;
+  font-weight: 700;
+  line-height: 1.3;
+}
+
+.stock-meta {
+  display: flex;
+  gap: 0.4rem;
+  margin-top: 0.3rem;
+  align-items: center;
+}
+
+.tag {
+  font-size: 0.68rem;
+  padding: 0.15rem 0.5rem;
+  border-radius: 4px;
+  background: rgba(255,255,255,0.07);
+  color: var(--muted);
+  border: 1px solid var(--border);
+}
+
+/* 涨跌幅徽章 */
+.change-badge {
+  font-size: 1rem;
+  font-weight: 700;
+  padding: 0.3rem 0.7rem;
+  border-radius: 8px;
+  white-space: nowrap;
+}
+
+.change-badge.up   { background: rgba(232,64,64,0.15);  color: var(--red); }
+.change-badge.down { background: rgba(28,180,84,0.15);  color: var(--green); }
+.change-badge.flat { background: rgba(139,148,158,0.15);color: var(--muted); }
+
+/* 数据行 */
+.data-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-top: 1px solid var(--border);
+  padding-top: 0.75rem;
+}
+
+.data-item {
+  text-align: center;
+}
+
+.data-label {
+  font-size: 0.7rem;
+  color: var(--muted);
+  margin-bottom: 0.25rem;
+}
+
+.data-value {
+  font-size: 1rem;
+  font-weight: 600;
+}
+
+.data-value.cap {
+  color: var(--gold);
+  font-size: 1.1rem;
+}
+
+/* ===== 汇总栏 ===== */
+.summary {
+  display: flex;
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+  flex-wrap: wrap;
+}
+
+.summary-card {
+  flex: 1;
+  min-width: 140px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 1rem 1.2rem;
+  text-align: center;
+}
+
+.summary-card .s-label {
+  font-size: 0.72rem;
+  color: var(--muted);
+  margin-bottom: 0.4rem;
+}
+
+.summary-card .s-value {
+  font-size: 1.3rem;
+  font-weight: 700;
+}
+
+/* ===== 响应式 ===== */
+@media (max-width: 640px) {
+  .grid {
+    grid-template-columns: 1fr;
+  }
+
+  header {
+    padding: 0.75rem 1rem;
+  }
+
+  main {
+    margin-top: 1rem;
+  }
+
+  .summary {
+    gap: 0.5rem;
+  }
+
+  .summary-card {
+    min-width: 100px;
+  }
+}
+
+/* ===== 加载动画 ===== */
+@keyframes shimmer {
+  0%   { background-position: -400px 0; }
+  100% { background-position: 400px 0; }
+}
+
+/* ===== 底部 ===== */
+footer {
+  text-align: center;
+  color: var(--muted);
+  font-size: 0.75rem;
+  margin-top: 2.5rem;
+  padding-top: 1.5rem;
+  border-top: 1px solid var(--border);
+}

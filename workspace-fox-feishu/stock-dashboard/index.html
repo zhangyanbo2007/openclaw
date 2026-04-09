@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>A股市值 TOP 10</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+
+<!-- ===== 顶部导航 ===== -->
+<header>
+  <div class="logo">A股 <span>市值</span> TOP 10</div>
+  <div class="update-time" id="update-time">数据加载中…</div>
+</header>
+
+<main>
+
+  <!-- ===== 汇总统计 ===== -->
+  <div class="summary" id="summary">
+    <!-- 由 JS 动态填充 -->
+  </div>
+
+  <!-- ===== 股票卡片网格 ===== -->
+  <div class="section-title">市值排行榜</div>
+  <div class="grid" id="stock-grid">
+    <!-- 由 JS 动态填充 -->
+  </div>
+
+</main>
+
+<footer>
+  数据仅供参考，不构成投资建议 &nbsp;·&nbsp; 红涨绿跌（A股惯例）
+</footer>
+
+<script>
+// ===== 工具函数 =====
+
+/** 格式化市值：亿元保留整数，超万亿显示万亿 */
+function formatCap(cap) {
+  if (cap >= 10000) {
+    return (cap / 10000).toFixed(2) + ' 万亿';
+  }
+  return cap.toLocaleString() + ' 亿';
+}
+
+/** 格式化涨跌幅，返回 { text, cls } */
+function formatChange(change) {
+  if (change > 0) return { text: '+' + change.toFixed(2) + '%', cls: 'up' };
+  if (change < 0) return { text: change.toFixed(2) + '%',        cls: 'down' };
+  return { text: '0.00%', cls: 'flat' };
+}
+
+/** 排名角标样式 */
+function rankClass(rank) {
+  if (rank === 1) return 'rank-badge top1';
+  if (rank === 2) return 'rank-badge top2';
+  if (rank === 3) return 'rank-badge top3';
+  return 'rank-badge';
+}
+
+// ===== 渲染逻辑 =====
+
+function render(data) {
+  // 更新时间
+  document.getElementById('update-time').textContent =
+    '最后更新：' + data.lastUpdated + '  来源：' + data.source;
+
+  // 汇总统计
+  const totalCap  = data.stocks.reduce((s, d) => s + d.marketCap, 0);
+  const upCount   = data.stocks.filter(d => d.change > 0).length;
+  const downCount = data.stocks.filter(d => d.change < 0).length;
+  const avgChange = (data.stocks.reduce((s, d) => s + d.change, 0) / data.stocks.length);
+
+  const summaryEl = document.getElementById('summary');
+  summaryEl.innerHTML = `
+    <div class="summary-card">
+      <div class="s-label">前10总市值</div>
+      <div class="s-value" style="color:var(--gold)">${formatCap(totalCap)}</div>
+    </div>
+    <div class="summary-card">
+      <div class="s-label">上涨家数</div>
+      <div class="s-value" style="color:var(--red)">${upCount} 家</div>
+    </div>
+    <div class="summary-card">
+      <div class="s-label">下跌家数</div>
+      <div class="s-value" style="color:var(--green)">${downCount} 家</div>
+    </div>
+    <div class="summary-card">
+      <div class="s-label">平均涨跌幅</div>
+      <div class="s-value" style="color:${avgChange >= 0 ? 'var(--red)' : 'var(--green)'}">
+        ${avgChange >= 0 ? '+' : ''}${avgChange.toFixed(2)}%
+      </div>
+    </div>
+  `;
+
+  // 按市值降序排列（data.json 已排好，以防万一再排一次）
+  const sorted = [...data.stocks].sort((a, b) => b.marketCap - a.marketCap);
+
+  // 股票卡片
+  const grid = document.getElementById('stock-grid');
+  grid.innerHTML = sorted.map(stock => {
+    const ch = formatChange(stock.change);
+    return `
+      <div class="card">
+        <!-- 排名角标 -->
+        <div class="${rankClass(stock.rank)}">${stock.rank}</div>
+
+        <!-- 卡片头 -->
+        <div class="card-header">
+          <div>
+            <div class="stock-name">${stock.name}</div>
+            <div class="stock-meta">
+              <span class="tag">${stock.market}:${stock.code}</span>
+              <span class="tag">${stock.sector}</span>
+            </div>
+          </div>
+          <div class="change-badge ${ch.cls}">${ch.text}</div>
+        </div>
+
+        <!-- 数据行 -->
+        <div class="data-row">
+          <div class="data-item">
+            <div class="data-label">市值</div>
+            <div class="data-value cap">${formatCap(stock.marketCap)}</div>
+          </div>
+          <div class="data-item">
+            <div class="data-label">股价（元）</div>
+            <div class="data-value">${stock.price.toFixed(2)}</div>
+          </div>
+          <div class="data-item">
+            <div class="data-label">排名</div>
+            <div class="data-value">#${stock.rank}</div>
+          </div>
+        </div>
+      </div>
+    `;
+  }).join('');
+}
+
+// ===== 加载数据 =====
+fetch('data.json')
+  .then(r => {
+    if (!r.ok) throw new Error('数据加载失败');
+    return r.json();
+  })
+  .then(render)
+  .catch(err => {
+    document.getElementById('stock-grid').innerHTML =
+      `<p style="color:var(--red);padding:1rem">数据加载失败：${err.message}</p>`;
+  });
+</script>
+
+</body>
+</html>

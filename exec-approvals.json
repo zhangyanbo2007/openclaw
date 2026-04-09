@@ -1,0 +1,26 @@
+{
+  "version": 1,
+  "socket": {
+    "path": "/home/zhangyanbo/.openclaw/exec-approvals.sock",
+    "token": "NMvdxXFHeDwP-O17-J-4yPvgvFmDekkW"
+  },
+  "defaults": {},
+  "agents": {
+    "fox-openclaw_ai": {
+      "allowlist": [
+        {
+          "id": "f902d000-1e38-4476-8d2e-2fe04635fde1",
+          "pattern": "/home/zhangyanbo/.npm-global/bin/openclaw",
+          "lastUsedAt": 1775034762770,
+          "lastUsedCommand": "openclaw memory search \"索引\" --max-results 3",
+          "lastResolvedPath": "/home/zhangyanbo/.npm-global/bin/openclaw"
+        },
+        {
+          "id": "b17775bd-8ef7-4479-994d-abc39e75a02a",
+          "pattern": "/usr/bin/systemctl",
+          "lastUsedAt": 1775033046611
+        }
+      ]
+    }
+  }
+}

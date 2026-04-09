@@ -1,0 +1,49 @@
+{
+  "version": 1,
+  "skills": {
+    "ppt-generator": {
+      "version": "1.0.0",
+      "installedAt": 1773992394633
+    },
+    "ai-ppt-generate": {
+      "version": "1.0.0",
+      "installedAt": 1773992402049
+    },
+    "ppt": {
+      "version": "1.0.0",
+      "installedAt": 1773992407907
+    },
+    "nano-banana-pro": {
+      "version": "1.0.1",
+      "installedAt": 1774189726978
+    },
+    "ai-presentation-maker": {
+      "version": "1.0.0",
+      "installedAt": 1774190619169
+    },
+    "openai-image-gen": {
+      "version": "1.0.1",
+      "installedAt": 1774525285069
+    },
+    "wechat-automation": {
+      "version": "1.0.0",
+      "installedAt": 1774526104085
+    },
+    "openclaw-agent-browser": {
+      "version": "1.0.0",
+      "installedAt": 1774526118568
+    },
+    "douyin-video-analyst": {
+      "version": "1.0.1",
+      "installedAt": 1774526155582
+    },
+    "image-gen-skill": {
+      "version": "0.1.0",
+      "installedAt": 1774526172220
+    },
+    "12306-train-assistant": {
+      "version": "0.1.7",
+      "installedAt": 1775557533380
+    }
+  }
+}

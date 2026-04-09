@@ -1,0 +1,85 @@
+{
+  "lastUpdated": "2026-03-14 17:41:43",
+  "stocks": [
+    {
+      "rank": 1,
+      "name": "工商银行",
+      "code": "601398",
+      "price": 7.2,
+      "change": 0.56,
+      "marketCap": 2566125051041.0
+    },
+    {
+      "rank": 2,
+      "name": "建设银行",
+      "code": "601939",
+      "price": 9.15,
+      "change": 0.55,
+      "marketCap": 2393643490350.0
+    },
+    {
+      "rank": 3,
+      "name": "农业银行",
+      "code": "601288",
+      "price": 6.62,
+      "change": -0.3,
+      "marketCap": 2316887684239.0
+    },
+    {
+      "rank": 4,
+      "name": "中国石油",
+      "code": "601857",
+      "price": 12.05,
+      "change": -1.47,
+      "marketCap": 2205402782707.0
+    },
+    {
+      "rank": 5,
+      "name": "中国移动",
+      "code": "600941",
+      "price": 97.89,
+      "change": 1.5,
+      "marketCap": 2119702824069.0
+    },
+    {
+      "rank": 6,
+      "name": "中国海油",
+      "code": "600938",
+      "price": 42.0,
+      "change": -2.33,
+      "marketCap": 1996258067328.0
+    },
+    {
+      "rank": 7,
+      "name": "宁德时代",
+      "code": "300750",
+      "price": 397.0,
+      "change": 0.38,
+      "marketCap": 1811855975532.0
+    },
+    {
+      "rank": 8,
+      "name": "贵州茅台",
+      "code": "600519",
+      "price": 1413.64,
+      "change": 1.55,
+      "marketCap": 1770259266733.0
+    },
+    {
+      "rank": 9,
+      "name": "中国银行",
+      "code": "601988",
+      "price": 5.39,
+      "change": 0.37,
+      "marketCap": 1736724899677.0
+    },
+    {
+      "rank": 10,
+      "name": "中国人寿",
+      "code": "601628",
+      "price": 41.93,
+      "change": -0.59,
+      "marketCap": 1185139080650.0
+    }
+  ]
+}

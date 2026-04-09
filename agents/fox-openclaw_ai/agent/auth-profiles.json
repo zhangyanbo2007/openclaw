@@ -1,0 +1,61 @@
+{
+  "version": 1,
+  "profiles": {
+    "openrouter:default": {
+      "type": "api_key",
+      "provider": "openrouter",
+      "key": "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"
+    },
+    "minimax:cn": {
+      "type": "api_key",
+      "provider": "minimax",
+      "key": "sk-api-fF5lccfBWx7BZwQLH50QIPk83MLkA4UA7IKYqZOYZaf_e4fyx9LidMxWxhQS3B_8Q8-H5I32_GHgqvlSwoK4J3v23gwj5vkS6TetHZ0JfN9ZOXOD6KM6juk"
+    },
+    "moonshot:default": {
+      "type": "api_key",
+      "provider": "moonshot",
+      "key": "sk-ULzGCGFxIJI8NvyiUYl8qaloy7Y2jXNwhlKLG1ECZVPdVldD"
+    },
+    "custom-dashscope-aliyuncs-com:default": {
+      "type": "api_key",
+      "provider": "custom-dashscope-aliyuncs-com",
+      "key": "sk-a2675c4123764e46880426a87bff42de"
+    },
+    "zai:default": {
+      "type": "api_key",
+      "provider": "zai",
+      "key": "c1a0a74dab85413db7383dbd16a88313.TFm8FJ6XUj4og7AT"
+    }
+  },
+  "lastGood": {
+    "custom-dashscope-aliyuncs-com": "custom-dashscope-aliyuncs-com:default",
+    "minimax": "minimax:cn"
+  },
+  "usageStats": {
+    "openrouter:default": {
+      "errorCount": 0,
+      "lastUsed": 1773993842215
+    },
+    "moonshot:default": {
+      "errorCount": 0,
+      "lastUsed": 1773997248038
+    },
+    "custom-dashscope-aliyuncs-com:default": {
+      "errorCount": 0,
+      "lastUsed": 1775181236106,
+      "lastFailureAt": 1774583889038
+    },
+    "minimax:cn": {
+      "errorCount": 0,
+      "lastUsed": 1774583835061
+    },
+    "zai:default": {
+      "errorCount": 1,
+      "failureCounts": {
+        "rate_limit": 1
+      },
+      "lastFailureAt": 1774583921209,
+      "cooldownUntil": 1774583981209
+    }
+  }
+}

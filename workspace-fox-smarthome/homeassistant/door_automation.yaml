@@ -1,0 +1,36 @@
+# 进出门智能控制自动化
+# 使用方法：将此配置添加到 HA 的 configuration.yaml 或 automations.yaml
+
+# Shell Command 配置（添加到 configuration.yaml）
+shell_command:
+  door_handler: /home/zhangyanbo/.openclaw/workspace-fox-smarthome/scripts/door_handler.sh
+
+# 自动化配置（添加到 automations.yaml）
+automation:
+  - alias: "进出门智能控制"
+    description: "检测进出门，人脸识别，控制灯光和音箱"
+    trigger:
+      - platform: state
+        entity_id: binary_sensor.lumi_cn_719859620_acn001_contact_state
+        to: "on"  # 门打开
+        from: "off"  # 之前是关闭状态
+    condition: []
+    action:
+      - service: shell_command.door_handler
+    mode: queued  # 排队模式，避免并发执行
+    max: 5  # 最多排队 5 次
+
+  - alias: "猫眼抓图测试"
+    description: "手动测试猫眼抓图功能"
+    trigger:
+      - platform: event
+        event_type: test_cat_eye_capture
+    condition: []
+    action:
+      - service: shell_command.door_handler
+    mode: single
+
+# 通知配置（可选，用于调试）
+notify:
+  - name: door_status
+    platform: persistent_notification

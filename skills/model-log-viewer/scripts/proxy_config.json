@@ -1,0 +1,9 @@
+{
+  "enabled_models": [],
+  "model_port_mapping": {},
+  "logs_dir": "/code/project/deploy_model/logs",
+  "session": {
+    "time_window_seconds": 60,
+    "similarity_threshold": 0.8
+  }
+}

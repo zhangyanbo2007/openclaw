@@ -224,7 +224,7 @@ class ConversationLogger:
         return result
 
     def log(self, client_ip: str, headers: dict, request_body: dict, response_data: dict,
-            endpoint: str, model_name: str, is_stream: bool = False):
+            endpoint: str, model_name: str, is_stream: bool = False, duration: float = None):
         messages = request_body.get("messages", [])
         conv_id = self.get_conversation_id(client_ip, messages, headers)
         user_id = self.get_user_id(messages)
@@ -275,7 +275,8 @@ class ConversationLogger:
                 "reasoning": reasoning,
                 "tool_calls": tool_calls,
                 "usage": usage,
-                "finish_reason": finish_reason
+                "finish_reason": finish_reason,
+                "duration": duration  # 新增：运行时间（秒）
             }
         }
 
@@ -430,6 +431,9 @@ class VLLMProxy:
             raw_path = raw_path[3:]
         url = f"{backend_url}/{raw_path}"
 
+        # 记录请求开始时间
+        request_start = datetime.now()
+
         try:
             async with aiohttp.ClientSession() as session:
                 async with session.request(
@@ -458,6 +462,10 @@ class VLLMProxy:
                         response_data = await resp.json()
                         proxy_resp = web.json_response(response_data, status=resp.status)
 
+                    # 记录请求结束时间并计算运行时间
+                    request_end = datetime.now()
+                    duration = (request_end - request_start).total_seconds()
+
                     # 记录日志（只记录 v1 开头的请求）
                     if original_path.startswith("v1/"):
                         self.logger.log(
@@ -467,7 +475,8 @@ class VLLMProxy:
                             response_data=response_data,
                             endpoint=original_path,
                             model_name=used_model_name,
-                            is_stream=is_stream
+                            is_stream=is_stream,
+                            duration=duration  # 新增：运行时间
                         )
 
                     return proxy_resp

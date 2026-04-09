@@ -423,33 +423,28 @@ class LogViewerHandler(SimpleHTTPRequestHandler):
             return styles.get(role, {"color": "#666", "bg": "#f5f5f5", "label": role, "border": "#999"})
 
         # 按时间顺序处理每个请求，只保留一个"模型"角色
+        timeline_events = []
+        round_num = 0  # 轮次计数器（只在用户输入时递增）
+
         for req in requests:
             timestamp = req["timestamp"]
             messages = req["request"].get("messages", [])
             response = req["response"]
             usage = response.get("usage", {})
             request_model = req["request"].get("model", "")
-            tool_calls = response.get("tool_calls") or []
+            tool_calls = response.get("tool_calls", []) or []
 
             model_info = proxy_model_info.get(request_model, {})
             proxy_url = model_info.get("proxy_url", "")
             original_url = model_info.get("original_url", "")
             model_name = model_info.get("model", request_model)
 
-            if prev_timestamp:
-                curr_dt = datetime.fromisoformat(timestamp)
-                prev_dt = datetime.fromisoformat(prev_timestamp)
-                interval = (curr_dt - prev_dt).total_seconds()
-                interval_str = f"{interval:.1f}s"
-            elif session_start:
-                # 第一个请求：计算相对于会话开始时间的间隔
-                curr_dt = datetime.fromisoformat(timestamp)
-                start_dt = datetime.fromisoformat(session_start)
-                interval = (curr_dt - start_dt).total_seconds()
-                interval_str = f"{interval:.1f}s"
+            # 从 response 中读取 duration（运行时间）
+            duration = response.get("duration")
+            if duration:
+                interval_str = f"{duration:.1f}s"
             else:
                 interval_str = "-"
-            prev_timestamp = timestamp
 
             # 提取用户消息（仅用于显示轮次号）
             for msg in messages:
@@ -479,13 +474,20 @@ class LogViewerHandler(SimpleHTTPRequestHandler):
                     tool_args = func.get("arguments", "{}")
                     output_parts.append(f"\n\n[Tool Call]: {tool_name}({tool_args})")
 
+            # 从 response 中读取 duration（运行时间）
+            duration = response.get("duration")
+            if duration:
+                duration_str = f"{duration:.1f}s"
+            else:
+                duration_str = "-"
+
             timeline_events.append({
                 "round": round_num,
                 "timestamp": timestamp,
                 "role": "model",
                 "input": messages,  # 完整的输入消息
                 "output": "".join(output_parts),
-                "interval": interval_str,  # 使用实际计算的间隔
+                "interval": duration_str,  # 使用运行时间
                 "model_info": {
                     "proxy_url": proxy_url,
                     "original_url": original_url,

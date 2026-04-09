@@ -738,7 +738,7 @@ class LogViewerHandler(SimpleHTTPRequestHandler):
             self.send_json({"success": False, "error": str(e)})
 
     def get_openclaw_models(self):
-        """从 openclaw.json 读取所有模型配置，过滤掉本地转发的模型"""
+        """从 openclaw.json 读取所有模型配置"""
         openclaw_config = Path.home() / ".openclaw" / "openclaw.json"
         if not openclaw_config.exists():
             self.send_json({"success": False, "error": "openclaw.json not found"})
@@ -756,10 +756,6 @@ class LogViewerHandler(SimpleHTTPRequestHandler):
                 for model in provider_config.get("models", []):
                     model_id = model.get("id", "")
                     model_name = model.get("name", model_id)
-
-                    # 过滤掉本地转发的模型（名称中包含"本地转发"）
-                    if "本地转发" in model_name:
-                        continue
 
                     model_key = f"{provider_name}/{model_id}"
                     models[model_key] = {

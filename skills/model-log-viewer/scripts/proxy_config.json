@@ -1,7 +1,15 @@
 {
-  "enabled_models": [],
-  "model_port_mapping": {},
-  "logs_dir": "/code/project/deploy_model/logs",
+  "enabled_models": [
+    "qwen3.5-27b.local-8888",
+    "gemma-4-31b-it.local-8889",
+    "qwen3.5-plus.local-8890"
+  ],
+  "model_port_mapping": {
+    "qwen3.5-27b.local-8888": 8888,
+    "gemma-4-31b-it.local-8889": 8889,
+    "qwen3.5-plus.local-8890": 8890
+  },
+  "logs_dir": "/home/zhangyanbo/.openclaw/model-logs",
   "session": {
     "time_window_seconds": 60,
     "similarity_threshold": 0.8

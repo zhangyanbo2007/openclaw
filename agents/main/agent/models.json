@@ -340,8 +340,8 @@
       "api": "openai-completions",
       "models": [
         {
-          "id": "qwen3.5-27b",
-          "name": "Qwen3.5-27B（本地转发 8888）",
+          "id": "qwen3.5-27b.local-8888",
+          "name": "qwen3.5-27b.local-8888",
           "api": "openai-completions",
           "reasoning": false,
           "input": [
@@ -353,8 +353,8 @@
             "cacheRead": 0,
             "cacheWrite": 0
           },
-          "contextWindow": 65536,
-          "maxTokens": 32768
+          "contextWindow": 200000,
+          "maxTokens": 8192
         }
       ]
     },
@@ -364,8 +364,8 @@
       "api": "openai-completions",
       "models": [
         {
-          "id": "gemma-4-31b-it",
-          "name": "Gemma 4 31B IT（本地转发 8889）",
+          "id": "gemma-4-31b-it.local-8889",
+          "name": "gemma-4-31b-it.local-8889",
           "api": "openai-completions",
           "reasoning": false,
           "input": [
@@ -377,8 +377,32 @@
             "cacheRead": 0,
             "cacheWrite": 0
           },
-          "contextWindow": 32768,
-          "maxTokens": 16384
+          "contextWindow": 200000,
+          "maxTokens": 8192
+        }
+      ]
+    },
+    "vllm-8890": {
+      "baseUrl": "http://localhost:8890/v1",
+      "apiKey": "not-needed",
+      "api": "openai-completions",
+      "models": [
+        {
+          "id": "qwen3.5-plus.local-8890",
+          "name": "qwen3.5-plus.local-8890",
+          "api": "openai-completions",
+          "reasoning": false,
+          "input": [
+            "text"
+          ],
+          "cost": {
+            "input": 0,
+            "output": 0,
+            "cacheRead": 0,
+            "cacheWrite": 0
+          },
+          "contextWindow": 200000,
+          "maxTokens": 8192
         }
       ]
     }

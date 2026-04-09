@@ -461,12 +461,12 @@ class LogViewerHandler(SimpleHTTPRequestHandler):
             if not isinstance(resp_content, str):
                 resp_content = str(resp_content)
 
-            # 构建输出内容：包含 content + reasoning + tool_calls
+            # 构建输出内容：按时间顺序 reasoning -> content -> tool_calls
             output_parts = []
+            if reasoning:
+                output_parts.append(f"[Thinking]: {reasoning}\n\n")
             if resp_content:
                 output_parts.append(resp_content)
-            if reasoning:
-                output_parts.append(f"\n\n[Thinking]: {reasoning}")
             if tool_calls:
                 for tc in tool_calls:
                     func = tc.get("function", {})

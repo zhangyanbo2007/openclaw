@@ -830,15 +830,31 @@
 
         function renderModelList() {
             const container = document.getElementById('modelList');
-            const modelKeys = Object.keys(openclawModels);
+
+            // 过滤掉 localproxy- 开头的供应商（这些是代理配置，不是原始模型）
+            const filteredModels = {};
+            for (const [key, info] of Object.entries(openclawModels)) {
+                if (!info.provider.startsWith('localproxy-')) {
+                    filteredModels[key] = info;
+                }
+            }
+
+            const modelKeys = Object.keys(filteredModels);
             if (modelKeys.length === 0) {
                 container.innerHTML = '<div style="color: #888;">未找到模型配置</div>';
                 return;
             }
 
+            // 构建代理映射：原始模型 key -> 代理端口
+            const proxyModelMap = {};
+            for (const [proxyModelKey, port] of Object.entries(currentPortMapping)) {
+                // proxyModelKey 格式：vllm-5555/qwen3.5-27b
+                proxyModelMap[proxyModelKey] = port;
+            }
+
             // 按 provider 分组
             const grouped = {};
-            for (const [key, info] of Object.entries(openclawModels)) {
+            for (const [key, info] of Object.entries(filteredModels)) {
                 const provider = info.provider || 'unknown';
                 if (!grouped[provider]) grouped[provider] = [];
                 grouped[provider].push({ key, ...info });
@@ -873,7 +889,7 @@
 
                 for (const model of models) {
                     const modelKey = model.key;
-                    let configuredPort = currentPortMapping[modelKey];
+                    let configuredPort = proxyModelMap[modelKey];
                     // 统一转为数字类型
                     if (configuredPort) {
                         configuredPort = Number(configuredPort);

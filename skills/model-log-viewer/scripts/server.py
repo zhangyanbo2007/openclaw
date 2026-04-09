@@ -738,7 +738,7 @@ class LogViewerHandler(SimpleHTTPRequestHandler):
             self.send_json({"success": False, "error": str(e)})
 
     def get_openclaw_models(self):
-        """从 openclaw.json 读取所有模型配置，过滤掉 localproxy 开头的本地代理"""
+        """从 openclaw.json 读取所有模型配置"""
         openclaw_config = Path.home() / ".openclaw" / "openclaw.json"
         if not openclaw_config.exists():
             self.send_json({"success": False, "error": "openclaw.json not found"})
@@ -752,10 +752,6 @@ class LogViewerHandler(SimpleHTTPRequestHandler):
             providers = config.get("models", {}).get("providers", {})
 
             for provider_name, provider_config in providers.items():
-                # 过滤掉 localproxy 开头的本地代理
-                if provider_name.startswith("localproxy-"):
-                    continue
-
                 base_url = provider_config.get("baseUrl", "")
                 for model in provider_config.get("models", []):
                     model_id = model.get("id", "")

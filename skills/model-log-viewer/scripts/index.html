@@ -974,13 +974,28 @@
         }
 
         async function syncToOpenclaw() {
-            const confirmMsg = Object.keys(currentPortMapping).length > 0
-                ? `确定要将 ${Object.keys(currentPortMapping).length} 个代理配置同步到 openclaw.json 并重启 gateway 吗？`
-                : '确定要同步配置到 openclaw.json 并重启 gateway 吗？';
+            const count = Object.keys(currentPortMapping).length;
+            const confirmMsg = count > 0
+                ? `⚠️ 警告：同步配置会重启 OpenClaw Gateway！
+
+确定要将 ${count} 个代理配置同步到 openclaw.json 吗？
+
+同步后将：
+1. 更新 openclaw.json 中的 localproxy-* 供应商配置
+2. 自动重启 OpenClaw Gateway（约 1-2 秒）
+3. 所有智能体将使用新的全局配置`
+                : '⚠️ 警告：同步配置会重启 OpenClaw Gateway！
+
+确定要同步配置到 openclaw.json 吗？
+
+同步后将：
+1. 更新 openclaw.json 中的 localproxy-* 供应商配置
+2. 自动重启 OpenClaw Gateway（约 1-2 秒）
+3. 所有智能体将使用新的全局配置';
             if (!confirm(confirmMsg)) return;
             const resultDiv = document.getElementById('syncResult');
             resultDiv.className = 'sync-result show';
-            resultDiv.innerHTML = '<div class="alert alert-info">正在同步配置并重启 gateway...</div>';
+            resultDiv.innerHTML = '<div class="alert alert-info">⏳ 正在同步配置并重启 gateway，请稍候...</div>';
             try {
                 const response = await fetch('/api/sync', {
                     method: 'POST',
@@ -991,7 +1006,10 @@
                 if (result.success) {
                     resultDiv.innerHTML = `
                         <div class="alert alert-success">✓ ${result.message}</div>
-                        <div style="color: #666; font-size: 14px;">${JSON.stringify(result.restart, null, 2)}</div>
+                        <div style="color: #666; font-size: 14px; margin-top: 10px;">
+                            <strong>Gateway 重启完成</strong><br>
+                            所有智能体将在重启后使用新的全局配置
+                        </div>
                     `;
                 } else {
                     resultDiv.innerHTML = `<div class="alert alert-error">✗ 同步失败：${result.error}</div>`;
@@ -999,7 +1017,7 @@
             } catch (e) {
                 resultDiv.innerHTML = `<div class="alert alert-error">✗ 同步失败：${e.message}</div>`;
             }
-            setTimeout(() => { resultDiv.className = 'sync-result'; }, 5000);
+            setTimeout(() => { resultDiv.className = 'sync-result'; }, 8000);
         }
 
         async function checkStatus() {

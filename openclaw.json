@@ -502,7 +502,7 @@
           "name": "狐狸虚拟助手",
           "appId": "cli_a92d483ece78dbcc",
           "appSecret": "l1rhhwFoWwtMXAPa9yhx1dtOLQoQGXoL",
-          "enabled": true,
+          "enabled": false,
           "connectionMode": "websocket",
           "domain": "feishu",
           "groupPolicy": "open",
@@ -511,29 +511,27 @@
             "*"
           ],
           "streaming": true,
-          "footer": {
-            "elapsed": true,
-            "status": true
-          },
           "groups": {
             "oc_1214afff935c6a1158d8ce7a6ba500ac": {
               "requireMention": false,
-              "agentId": "fox-ppt"
+              "skills": [
+                "fox-ppt"
+              ]
             },
             "oc_e2e6963fdf209de2fb7250c3a56727b8": {
               "requireMention": false,
-              "agentId": "fox-feishu"
+              "skills": [
+                "fox-feishu"
+              ]
             }
           },
-          "threadSession": true,
-          "requireMention": false,
-          "blockStreaming": true
+          "requireMention": false
         },
         "fox-smarthome": {
           "name": "狐狸智能家居管家",
           "appId": "cli_a93fa0d94b225bdb",
           "appSecret": "I6fUqPMBMQvN8Be9j08tte5OlaoknAO7",
-          "enabled": true,
+          "enabled": false,
           "connectionMode": "websocket",
           "domain": "feishu",
           "groupPolicy": "open",
@@ -542,19 +540,13 @@
             "*"
           ],
           "streaming": true,
-          "footer": {
-            "elapsed": true,
-            "status": true
-          },
-          "threadSession": true,
-          "requireMention": false,
-          "blockStreaming": true
+          "requireMention": false
         },
         "fox-feishu": {
           "name": "狐狸飞书文档助手",
           "appId": "cli_a93202000f399bde",
           "appSecret": "twBum1qUuK99IibwhaDho0YtXgBgxca5",
-          "enabled": true,
+          "enabled": false,
           "connectionMode": "websocket",
           "domain": "feishu",
           "groupPolicy": "open",
@@ -563,19 +555,13 @@
             "*"
           ],
           "streaming": true,
-          "footer": {
-            "elapsed": true,
-            "status": true
-          },
-          "threadSession": true,
-          "requireMention": false,
-          "blockStreaming": true
+          "requireMention": false
         },
         "fox-embodied_ai": {
           "name": "狐狸具身智能研究助手",
           "appId": "cli_a93223c12eb8dcc4",
           "appSecret": "eLGghTZUM3KG2UobbjeobbolMlN3tbsv",
-          "enabled": true,
+          "enabled": false,
           "connectionMode": "websocket",
           "domain": "feishu",
           "groupPolicy": "open",
@@ -584,19 +570,13 @@
             "*"
           ],
           "streaming": true,
-          "footer": {
-            "elapsed": true,
-            "status": true
-          },
-          "threadSession": true,
-          "requireMention": false,
-          "blockStreaming": true
+          "requireMention": false
         },
         "fox-openclaw_ai": {
           "name": "狐狸openclaw研究助手",
           "appId": "cli_a92d503982e3dbc0",
           "appSecret": "GowA3dw4BshEFtAhTZQlacbV1WvnfMDu",
-          "enabled": true,
+          "enabled": false,
           "connectionMode": "websocket",
           "domain": "feishu",
           "groupPolicy": "open",
@@ -605,13 +585,7 @@
             "*"
           ],
           "streaming": true,
-          "footer": {
-            "elapsed": true,
-            "status": true
-          },
-          "threadSession": true,
           "requireMention": false,
-          "blockStreaming": true,
           "groups": {
             "oc_3d6ebd5cb41d4cf5847b8b2babedd07d": {
               "requireMention": true
@@ -623,10 +597,11 @@
           "dmPolicy": "open",
           "allowFrom": [
             "*"
-          ]
+          ],
+          "enabled": false
         }
       },
-      "enabled": true
+      "enabled": false
     }
   },
   "gateway": {

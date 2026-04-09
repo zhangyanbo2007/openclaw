@@ -1,0 +1,20 @@
+{
+  "conversation_id": "conv_41cdb81a6551",
+  "user_id": "unknown",
+  "client": "unknown",
+  "first_message": {
+    "role": "user",
+    "content": "final test"
+  },
+  "started_at": "2026-04-09T15:28:54.706811",
+  "requests": [
+    {
+      "timestamp": "2026-04-09T15:28:54.706811",
+      "model": "qwen3.5-27b",
+      "tokens": 0,
+      "user_id": "unknown"
+    }
+  ],
+  "last_updated": "2026-04-09T15:28:54.706811",
+  "request_count": 1
+}

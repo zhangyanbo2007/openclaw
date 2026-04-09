@@ -1,0 +1,32 @@
+{
+  "conversation_id": "conv_0431c68762ef",
+  "user_id": "unknown",
+  "client": "unknown",
+  "first_message": {
+    "role": "user",
+    "content": "hi"
+  },
+  "started_at": "2026-04-09T15:17:27.117829",
+  "requests": [
+    {
+      "timestamp": "2026-04-09T15:17:27.117829",
+      "model": "qwen3.5-27b",
+      "tokens": 16,
+      "user_id": "unknown"
+    },
+    {
+      "timestamp": "2026-04-09T15:17:51.752055",
+      "model": "qwen3.5-27b",
+      "tokens": 0,
+      "user_id": "unknown"
+    },
+    {
+      "timestamp": "2026-04-09T15:20:42.895752",
+      "model": "qwen3.5-27b",
+      "tokens": 0,
+      "user_id": "unknown"
+    }
+  ],
+  "last_updated": "2026-04-09T15:20:42.895752",
+  "request_count": 3
+}

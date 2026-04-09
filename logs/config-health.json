@@ -2,19 +2,19 @@
   "entries": {
     "/home/zhangyanbo/.openclaw/openclaw.json": {
       "lastKnownGood": {
-        "hash": "38eebc80bdef1280759d412a809cc6b266187bea9310ff7745b125a4c7a9fae5",
-        "bytes": 20066,
-        "mtimeMs": 1775532985010.431,
-        "ctimeMs": 1775532985013.2578,
+        "hash": "281866d8d54d6c19f6f680d86fad7073c9809e828af7fe6e30bd686c7af8cd1f",
+        "bytes": 18048,
+        "mtimeMs": 1775725390572.7063,
+        "ctimeMs": 1775725390572.7063,
         "dev": "66308",
         "ino": "4106526",
-        "mode": 384,
+        "mode": 436,
         "nlink": 1,
         "uid": 1001,
         "gid": 1001,
         "hasMeta": true,
         "gatewayMode": "local",
-        "observedAt": "2026-04-07T03:42:23.927Z"
+        "observedAt": "2026-04-09T09:03:36.421Z"
       },
       "lastObservedSuspiciousSignature": null
     }

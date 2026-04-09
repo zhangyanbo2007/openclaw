@@ -558,10 +558,10 @@ class LogViewerHandler(SimpleHTTPRequestHandler):
                             <div style="white-space: pre-wrap; max-height: 500px; overflow-y: auto; font-size: 13px;">{escape_html(model_output)}</div>
                         </div>
                     </td>
-                    <td style="width: 100px; vertical-align: middle; text-align: center;">
+                    <td style="width: 100px; vertical-align: top; text-align: center; padding-top: 12px;">
                         <span class="tokens">{prompt_tokens}/{completion_tokens}</span>
                     </td>
-                    <td style="width: 70px; vertical-align: middle; text-align: center;" class="interval">{interval}</td>
+                    <td style="width: 70px; vertical-align: top; text-align: center; padding-top: 12px;" class="interval">{interval}</td>
                 </tr>
             ''')
 

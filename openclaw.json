@@ -315,9 +315,10 @@
   "agents": {
     "defaults": {
       "model": {
-        "primary": "vllm-5555/qwen3.5-27b",
+        "primary": "localproxy-8888/qwen3.5-27b",
         "fallbacks": [
-          "custom-dashscope-aliyuncs-com/qwen3.5-plus",
+          "localproxy-8890/qwen3.5-plus",
+          "localproxy-8889/gemma-4-31b-it",
           "zai/glm-5",
           "minimax/MiniMax-M2.5",
           "moonshot/kimi-k2.5"
@@ -341,6 +342,15 @@
         },
         "moonshot/kimi-k2.5": {
           "alias": "Kimi K2.5 (月之暗面)"
+        },
+        "localproxy-8888/qwen3.5-27b": {
+          "alias": "Qwen3.5-27B (本地代理 8888)"
+        },
+        "localproxy-8889/gemma-4-31b-it": {
+          "alias": "Gemma 4 31B IT (本地代理 8889)"
+        },
+        "localproxy-8890/qwen3.5-plus": {
+          "alias": "Qwen3.5-Plus (阿里云) (本地代理 8890)"
         }
       },
       "workspace": "/home/zhangyanbo/.openclaw/workspace",
@@ -362,15 +372,6 @@
     "list": [
       {
         "id": "main",
-        "model": {
-          "primary": "vllm/qwen3.5-27b",
-          "fallbacks": [
-            "custom-dashscope-aliyuncs-com/qwen3.5-plus",
-            "zai/glm-5",
-            "minimax/MiniMax-M2.5",
-            "moonshot/kimi-k2.5"
-          ]
-        },
         "tools": {
           "alsoAllow": [
             "browser",
@@ -400,91 +401,37 @@
         "id": "fox-avatar",
         "name": "fox-avatar",
         "workspace": "/home/zhangyanbo/.openclaw/workspace-fox-avatar",
-        "agentDir": "/home/zhangyanbo/.openclaw/agents/fox-avatar/agent",
-        "model": {
-          "primary": "vllm/qwen3.5-27b",
-          "fallbacks": [
-            "custom-dashscope-aliyuncs-com/qwen3.5-plus",
-            "zai/glm-5",
-            "minimax/MiniMax-M2.5",
-            "moonshot/kimi-k2.5"
-          ]
-        }
+        "agentDir": "/home/zhangyanbo/.openclaw/agents/fox-avatar/agent"
       },
       {
         "id": "fox-feishu",
         "name": "fox-feishu",
         "workspace": "/home/zhangyanbo/.openclaw/workspace-fox-feishu",
-        "agentDir": "/home/zhangyanbo/.openclaw/agents/fox-feishu/agent",
-        "model": {
-          "primary": "vllm/qwen3.5-27b",
-          "fallbacks": [
-            "custom-dashscope-aliyuncs-com/qwen3.5-plus",
-            "zai/glm-5",
-            "minimax/MiniMax-M2.5",
-            "moonshot/kimi-k2.5"
-          ]
-        }
+        "agentDir": "/home/zhangyanbo/.openclaw/agents/fox-feishu/agent"
       },
       {
         "id": "fox-embodied_ai",
         "name": "fox-embodied_ai",
         "workspace": "/home/zhangyanbo/.openclaw/workspace-fox-embodied_ai",
-        "agentDir": "/home/zhangyanbo/.openclaw/agents/fox-embodied_ai/agent",
-        "model": {
-          "primary": "vllm/qwen3.5-27b",
-          "fallbacks": [
-            "custom-dashscope-aliyuncs-com/qwen3.5-plus",
-            "zai/glm-5",
-            "minimax/MiniMax-M2.5",
-            "moonshot/kimi-k2.5"
-          ]
-        }
+        "agentDir": "/home/zhangyanbo/.openclaw/agents/fox-embodied_ai/agent"
       },
       {
         "id": "fox-openclaw_ai",
         "name": "fox-openclaw_ai",
         "workspace": "/home/zhangyanbo/.openclaw/workspace-fox-openclaw_ai",
-        "agentDir": "/home/zhangyanbo/.openclaw/agents/fox-openclaw_ai/agent",
-        "model": {
-          "primary": "vllm/qwen3.5-27b",
-          "fallbacks": [
-            "custom-dashscope-aliyuncs-com/qwen3.5-plus",
-            "zai/glm-5",
-            "minimax/MiniMax-M2.5",
-            "moonshot/kimi-k2.5"
-          ]
-        }
+        "agentDir": "/home/zhangyanbo/.openclaw/agents/fox-openclaw_ai/agent"
       },
       {
         "id": "fox-smarthome",
         "name": "fox-smarthome",
         "workspace": "/home/zhangyanbo/.openclaw/workspace-fox-smarthome",
-        "agentDir": "/home/zhangyanbo/.openclaw/agents/fox-smarthome/agent",
-        "model": {
-          "primary": "vllm/qwen3.5-27b",
-          "fallbacks": [
-            "custom-dashscope-aliyuncs-com/qwen3.5-plus",
-            "zai/glm-5",
-            "minimax/MiniMax-M2.5",
-            "moonshot/kimi-k2.5"
-          ]
-        }
+        "agentDir": "/home/zhangyanbo/.openclaw/agents/fox-smarthome/agent"
       },
       {
         "id": "test",
         "name": "test",
         "workspace": "/home/zhangyanbo/.openclaw/workspace-test",
-        "agentDir": "/home/zhangyanbo/.openclaw/agents/test/agent",
-        "model": {
-          "primary": "vllm/qwen3.5-27b",
-          "fallbacks": [
-            "custom-dashscope-aliyuncs-com/qwen3.5-plus",
-            "zai/glm-5",
-            "minimax/MiniMax-M2.5",
-            "moonshot/kimi-k2.5"
-          ]
-        }
+        "agentDir": "/home/zhangyanbo/.openclaw/agents/test/agent"
       }
     ]
   },

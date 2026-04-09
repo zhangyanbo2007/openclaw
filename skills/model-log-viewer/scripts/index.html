@@ -809,23 +809,28 @@
                     proxyConfig = result.config;
                     currentPortMapping = proxyConfig.model_port_mapping || {};
                 }
+                return true;
             } catch (e) {
                 console.error('Failed to load config:', e);
+                return false;
             }
         }
 
         async function loadOpenclawModels() {
             try {
-                const response = await fetch('/api/openclaw/models');
+                const response = await fetch('/api/openclaw/models?t=' + Date.now());
                 const result = await response.json();
+                console.log('loadOpenclawModels result:', result);
                 if (result.success) {
                     openclawModels = result.models;
+                    console.log('openclawModels loaded:', Object.keys(openclawModels).length, 'models');
                     renderModelList();
                 } else {
                     document.getElementById('modelList').innerHTML =
                         `<div style="color: #dc3545;">加载失败：${result.error}</div>`;
                 }
             } catch (e) {
+                console.error('loadOpenclawModels error:', e);
                 document.getElementById('modelList').innerHTML =
                     `<div style="color: #dc3545;">加载失败：${e.message}</div>`;
             }
@@ -834,6 +839,8 @@
         function renderModelList() {
             const container = document.getElementById('modelList');
 
+            console.log('renderModelList called, openclawModels:', Object.keys(openclawModels).length);
+
             // 过滤掉 localproxy- 开头的供应商（这些是代理配置，不是原始模型）
             const filteredModels = {};
             for (const [key, info] of Object.entries(openclawModels)) {
@@ -841,6 +848,8 @@
                     filteredModels[key] = info;
                 }
             }
+
+            console.log('filteredModels:', Object.keys(filteredModels).length, 'models after filtering');
 
             const modelKeys = Object.keys(filteredModels);
             if (modelKeys.length === 0) {
@@ -1003,14 +1012,14 @@
 1. 更新 openclaw.json 中的 localproxy-* 供应商配置
 2. 自动重启 OpenClaw Gateway（约 1-2 秒）
 3. 所有智能体将使用新的全局配置`
-                : '⚠️ 警告：同步配置会重启 OpenClaw Gateway！
+                : `⚠️ 警告：同步配置会重启 OpenClaw Gateway！
 
 确定要同步配置到 openclaw.json 吗？
 
 同步后将：
 1. 更新 openclaw.json 中的 localproxy-* 供应商配置
 2. 自动重启 OpenClaw Gateway（约 1-2 秒）
-3. 所有智能体将使用新的全局配置';
+3. 所有智能体将使用新的全局配置`;
             if (!confirm(confirmMsg)) return;
             const resultDiv = document.getElementById('syncResult');
             resultDiv.className = 'sync-result show';
@@ -1196,14 +1205,17 @@
 
         // ========== 页面加载 ==========
         window.onload = function() {
-            // 恢复抽屉状态
-            const savedState = localStorage.getItem('modelConfigDrawerOpen');
-            if (savedState === 'false') {
-                closeDrawer();
-            }
+            console.log('Page loaded, starting initialization...');
+            // 默认打开抽屉，不恢复之前的关闭状态
+            // const savedState = localStorage.getItem('modelConfigDrawerOpen');
+            // if (savedState === 'false') {
+            //     closeDrawer();
+            // }
             // 按顺序初始化：先加载配置，再加载模型，最后检查状态
             loadConfig().then(() => {
+                console.log('loadConfig completed, loading models...');
                 loadOpenclawModels().then(() => {
+                    console.log('loadOpenclawModels completed, checking status...');
                     checkStatus();
                 });
             });

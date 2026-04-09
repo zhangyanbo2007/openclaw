@@ -499,10 +499,9 @@
     "feishu": {
       "accounts": {
         "fox-avatar": {
-          "name": "狐狸虚拟助手",
           "appId": "cli_a92d483ece78dbcc",
           "appSecret": "l1rhhwFoWwtMXAPa9yhx1dtOLQoQGXoL",
-          "enabled": false,
+          "enabled": true,
           "connectionMode": "websocket",
           "domain": "feishu",
           "groupPolicy": "open",
@@ -513,25 +512,17 @@
           "streaming": true,
           "groups": {
             "oc_1214afff935c6a1158d8ce7a6ba500ac": {
-              "requireMention": false,
-              "skills": [
-                "fox-ppt"
-              ]
+              "requireMention": false
             },
             "oc_e2e6963fdf209de2fb7250c3a56727b8": {
-              "requireMention": false,
-              "skills": [
-                "fox-feishu"
-              ]
+              "requireMention": false
             }
-          },
-          "requireMention": false
+          }
         },
         "fox-smarthome": {
-          "name": "狐狸智能家居管家",
           "appId": "cli_a93fa0d94b225bdb",
           "appSecret": "I6fUqPMBMQvN8Be9j08tte5OlaoknAO7",
-          "enabled": false,
+          "enabled": true,
           "connectionMode": "websocket",
           "domain": "feishu",
           "groupPolicy": "open",
@@ -539,14 +530,12 @@
           "allowFrom": [
             "*"
           ],
-          "streaming": true,
-          "requireMention": false
+          "streaming": true
         },
         "fox-feishu": {
-          "name": "狐狸飞书文档助手",
           "appId": "cli_a93202000f399bde",
           "appSecret": "twBum1qUuK99IibwhaDho0YtXgBgxca5",
-          "enabled": false,
+          "enabled": true,
           "connectionMode": "websocket",
           "domain": "feishu",
           "groupPolicy": "open",
@@ -554,14 +543,12 @@
           "allowFrom": [
             "*"
           ],
-          "streaming": true,
-          "requireMention": false
+          "streaming": true
         },
         "fox-embodied_ai": {
-          "name": "狐狸具身智能研究助手",
           "appId": "cli_a93223c12eb8dcc4",
           "appSecret": "eLGghTZUM3KG2UobbjeobbolMlN3tbsv",
-          "enabled": false,
+          "enabled": true,
           "connectionMode": "websocket",
           "domain": "feishu",
           "groupPolicy": "open",
@@ -569,14 +556,12 @@
           "allowFrom": [
             "*"
           ],
-          "streaming": true,
-          "requireMention": false
+          "streaming": true
         },
         "fox-openclaw_ai": {
-          "name": "狐狸openclaw研究助手",
           "appId": "cli_a92d503982e3dbc0",
           "appSecret": "GowA3dw4BshEFtAhTZQlacbV1WvnfMDu",
-          "enabled": false,
+          "enabled": true,
           "connectionMode": "websocket",
           "domain": "feishu",
           "groupPolicy": "open",
@@ -585,7 +570,6 @@
             "*"
           ],
           "streaming": true,
-          "requireMention": false,
           "groups": {
             "oc_3d6ebd5cb41d4cf5847b8b2babedd07d": {
               "requireMention": true
@@ -597,11 +581,10 @@
           "dmPolicy": "open",
           "allowFrom": [
             "*"
-          ],
-          "enabled": false
+          ]
         }
       },
-      "enabled": false
+      "enabled": true
     }
   },
   "gateway": {

@@ -539,7 +539,7 @@ class LogViewerHandler(SimpleHTTPRequestHandler):
                             <div><span style="color: #666;">模型:</span> <span style="color: #333;">{model_display}</span></div>
                         </div>
                     </td>
-                    <td colspan="2">
+                    <td>
                         <div style="margin-bottom: 10px;">
                             <div style="font-size: 12px; color: #666; font-weight: 600; margin-bottom: 6px;">📥 模型输入 ({len(input_messages)} 条消息)</div>
                             <div style="font-size: 11px; white-space: pre-wrap; word-break: break-word; line-height: 1.5; background: #fafafa; padding: 8px; border-radius: 4px; max-height: 600px; overflow-y: auto;">{input_html}</div>

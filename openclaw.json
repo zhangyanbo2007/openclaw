@@ -308,7 +308,7 @@
       },
       "localproxy-8890": {
         "baseUrl": "http://localhost:8890/v1",
-        "apiKey": "not-needed",
+        "apiKey": "sk-a2675c4123764e46880426a87bff42de",
         "api": "openai-completions",
         "models": [
           {

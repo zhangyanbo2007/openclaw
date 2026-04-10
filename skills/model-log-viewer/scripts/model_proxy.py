@@ -85,6 +85,23 @@ class ConversationLogger:
                         return match.group()
         return "unknown"
 
+    def is_new_session(self, messages: list) -> bool:
+        """检查是否是新的会话（通过 /new 或 /reset 标记）"""
+        for msg in messages:
+            if isinstance(msg, dict) and msg.get('role') == 'user':
+                content = msg.get('content', '')
+                # 处理 content 是列表的情况
+                if isinstance(content, list):
+                    for item in content:
+                        if isinstance(item, dict) and 'text' in item:
+                            if 'A new session was started via /new or /reset' in item.get('text', ''):
+                                return True
+                # 处理 content 是字符串的情况
+                elif isinstance(content, str):
+                    if 'A new session was started via /new or /reset' in content:
+                        return True
+        return False
+
     def find_matching_conversation(self, client_ip: str, messages: list, system_prompt: str) -> str:
         """
         查找是否属于已有的对话
@@ -122,7 +139,7 @@ class ConversationLogger:
     def get_conversation_id(self, client_ip: str, messages: list, headers: dict) -> str:
         """
         生成或查找会话 ID
-        优先级：1. X-Session-ID 头 > 2. 用户 ID (ou_xxx) > 3. 时间窗口 + 相似度关联
+        优先级：1. X-Session-ID 头 > 2. 用户 ID + /new 标记 > 3. 时间窗口关联
         """
         # 尝试从请求头获取会话 ID
         session_id = headers.get("x-session-id") or headers.get("x-request-id")
@@ -132,28 +149,34 @@ class ConversationLogger:
         # 优先使用用户 ID 作为会话标识
         user_id = self.get_user_id(messages)
         if user_id != "unknown":
-            # 使用用户 ID + 日期作为会话 ID 基础
             today = datetime.now().strftime("%Y%m%d")
             base_conv_id = f"conv_{user_id}_{today}"
 
-            # 检查是否有已存在的子会话（智能体工作流场景）
-            now = datetime.now()
-            for conv_id, conv_data in list(self.active_conversations.items()):
-                if conv_id.startswith(base_conv_id):
-                    if conv_data['client_ip'] == client_ip:
-                        last_time = datetime.fromisoformat(conv_data['last_updated'])
-                        time_diff = (now - last_time).total_seconds()
-                        if time_diff <= self.time_window_seconds:
-                            return conv_id
+            # 检查是否是 /new 或 /reset 触发的新会话
+            is_new = self.is_new_session(messages)
 
-            # 创建新的子会话
+            if not is_new:
+                # 不是新会话，检查是否有已存在的子会话
+                now = datetime.now()
+                for conv_id, conv_data in list(self.active_conversations.items()):
+                    if conv_id.startswith(base_conv_id):
+                        if conv_data['client_ip'] == client_ip:
+                            last_time = datetime.fromisoformat(conv_data['last_updated'])
+                            time_diff = (now - last_time).total_seconds()
+                            if time_diff <= self.time_window_seconds:
+                                return conv_id
+                            # 超时会话，清理
+                            del self.active_conversations[conv_id]
+
+            # 创建新的子会话（/new 标记或无匹配会话）
             conv_id = f"{base_conv_id}_{datetime.now().strftime('%H%M%S')}"
             self.active_conversations[conv_id] = {
                 "client_ip": client_ip,
                 "user_id": user_id,
                 "system_prompt": self.get_system_prompt(messages),
                 "started_at": datetime.now().isoformat(),
-                "last_updated": datetime.now().isoformat()
+                "last_updated": datetime.now().isoformat(),
+                "is_new_session": is_new  # 标记是否由 /new 触发
             }
             return conv_id
 

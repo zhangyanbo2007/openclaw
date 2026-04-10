@@ -540,6 +540,7 @@ class LogViewerHandler(SimpleHTTPRequestHandler):
             model_display = model_info.get("model", "N/A")
             prompt_tokens = model_info.get("prompt_tokens", 0)
             completion_tokens = model_info.get("completion_tokens", 0)
+            total_tokens = model_info.get("total_tokens", 0)
 
             # 生成模型输入的 HTML
             input_html = ""
@@ -582,6 +583,7 @@ class LogViewerHandler(SimpleHTTPRequestHandler):
                     </td>
                     <td style="width: 100px; vertical-align: top; text-align: center; padding-top: 12px;">
                         <span class="tokens">{prompt_tokens}/{completion_tokens}</span>
+                        <div style="margin-top: 6px; font-size: 11px; color: #666;">总 Token: {total_tokens}</div>
                     </td>
                     <td style="width: 70px; vertical-align: top; text-align: center; padding-top: 12px;" class="interval">{interval}</td>
                 </tr>

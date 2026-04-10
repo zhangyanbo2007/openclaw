@@ -225,8 +225,13 @@ class ConversationLogger:
                     # 累加内容
                     if delta.get("content"):
                         result["content"] += delta["content"]
-                    if delta.get("reasoning"):
+                    # 兼容多种 reasoning 字段名称：reasoning_content, reasoning, thinking
+                    if delta.get("reasoning_content"):
+                        result["reasoning"] += delta["reasoning_content"]
+                    elif delta.get("reasoning"):
                         result["reasoning"] += delta["reasoning"]
+                    elif delta.get("thinking"):
+                        result["reasoning"] += delta["thinking"]
 
                     # 检查 finish_reason
                     if choice.get("finish_reason"):
@@ -266,7 +271,8 @@ class ConversationLogger:
             choice = response_data.get("choices", [{}])[0] if response_data.get("choices") else {}
             message = choice.get("message", {})
             content = message.get("content", "")
-            reasoning = message.get("reasoning", "")
+            # 兼容多种 reasoning 字段名称：reasoning_content, reasoning, thinking
+            reasoning = message.get("reasoning_content", "") or message.get("reasoning", "") or message.get("thinking", "")
             tool_calls = message.get("tool_calls") or choice.get("tool_calls", [])
             usage = response_data.get("usage", {})
             finish_reason = choice.get("finish_reason", "")

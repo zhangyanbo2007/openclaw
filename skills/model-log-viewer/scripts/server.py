@@ -139,6 +139,10 @@ class LogViewerHandler(SimpleHTTPRequestHandler):
                         with open(index_file, "r", encoding="utf-8") as f:
                             conv_data = json.load(f)
                         conv_data["id"] = conv_dir.name
+                        # 计算总 token 数
+                        requests = conv_data.get("requests", [])
+                        total_tokens = sum(r.get("tokens", 0) for r in requests)
+                        conv_data["total_tokens"] = total_tokens
                         conversations.append(conv_data)
 
         self.send_json({"success": True, "conversations": conversations})

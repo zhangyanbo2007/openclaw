@@ -1,1 +1,20 @@
-{}
+{
+  "fbbe5dc5-2afc-4594-b24a-b16603d95727": {
+    "requestId": "fbbe5dc5-2afc-4594-b24a-b16603d95727",
+    "deviceId": "aae43476af7689322b6e9d0863fe58b6bf442e2aa7d27322b124b5a15f829fe2",
+    "publicKey": "zflfHwBfwgwRjWC8pTId9NAPn2dHjiK3afx-rYAdUHs",
+    "platform": "linux",
+    "clientId": "gateway-client",
+    "clientMode": "backend",
+    "role": "operator",
+    "roles": [
+      "operator"
+    ],
+    "scopes": [
+      "operator.write"
+    ],
+    "silent": false,
+    "isRepair": true,
+    "ts": 1775790872960
+  }
+}

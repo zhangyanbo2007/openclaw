@@ -1,0 +1,29 @@
+{
+  "timestamp": "2026-04-10T10:32:46.038024",
+  "client_ip": "127.0.0.1",
+  "client": "unknown",
+  "user_id": "unknown",
+  "conversation_id": "conv_103246_037910",
+  "endpoint": "v1/models",
+  "model": "",
+  "is_stream": false,
+  "request": {
+    "model": "unknown",
+    "messages": [],
+    "parameters": {}
+  },
+  "response": {
+    "content": "",
+    "reasoning": "",
+    "tool_calls": [],
+    "usage": {},
+    "finish_reason": "",
+    "duration": 0.182752,
+    "error": {
+      "message": "You didn't provide an API key. You need to provide your API key in an Authorization header using Bearer auth (i.e. Authorization: Bearer YOUR_KEY). ",
+      "type": "invalid_request_error",
+      "param": null,
+      "code": null
+    }
+  }
+}

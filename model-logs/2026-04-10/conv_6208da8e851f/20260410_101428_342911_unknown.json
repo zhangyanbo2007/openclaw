@@ -1,0 +1,40 @@
+{
+  "timestamp": "2026-04-10T10:14:28.342932",
+  "client_ip": "127.0.0.1",
+  "client": "unknown",
+  "user_id": "unknown",
+  "conversation_id": "conv_6208da8e851f",
+  "endpoint": "v1/chat/completions",
+  "model": "qwen3.5-plus",
+  "is_stream": false,
+  "request": {
+    "model": "qwen3.5-plus",
+    "messages": [
+      {
+        "role": "user",
+        "content": "你好"
+      }
+    ],
+    "parameters": {}
+  },
+  "response": {
+    "content": "你好！👋 很高兴见到你。有什么我可以帮你的吗？无论是聊天、查询信息、写作协助还是其他问题，我都在这里为你服务。",
+    "reasoning": "",
+    "tool_calls": [],
+    "usage": {
+      "prompt_tokens": 11,
+      "completion_tokens": 1444,
+      "total_tokens": 1455,
+      "completion_tokens_details": {
+        "reasoning_tokens": 1406,
+        "text_tokens": 1444
+      },
+      "prompt_tokens_details": {
+        "text_tokens": 11
+      }
+    },
+    "finish_reason": "stop",
+    "duration": 26.817786,
+    "error": null
+  }
+}

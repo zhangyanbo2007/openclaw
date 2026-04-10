@@ -1,0 +1,40 @@
+{
+  "timestamp": "2026-04-10T10:41:50.942627",
+  "client_ip": "127.0.0.1",
+  "client": "unknown",
+  "user_id": "unknown",
+  "conversation_id": "conv_03ad970800c9",
+  "endpoint": "v1/chat/completions",
+  "model": "qwen3.5-plus",
+  "is_stream": false,
+  "request": {
+    "model": "qwen3.5-plus",
+    "messages": [
+      {
+        "role": "user",
+        "content": "测试 8890 代理"
+      }
+    ],
+    "parameters": {}
+  },
+  "response": {
+    "content": "# 8890 代理测试方法\n\n## 1. 使用 curl 测试\n\n```bash\n# HTTP 代理测试\ncurl -x http://代理服务器 IP:8890 http://httpbin.org/ip\n\n# HTTPS 代理测试\ncurl -x http://代理服务器 IP:8890 https://httpbin.org/ip\n\n# 带认证的代理\ncurl -x http://用户名：密码@代理服务器 IP:8890 http://httpbin.org/ip\n```\n\n## 2. 使用 Python 测试\n\n```python\nimport requests\n\nproxies = {\n    'http': 'http://代理服务器 IP:8890',\n    'https': 'http://代理服务器 IP:8890'\n}\n\ntry:\n    response = requests.get('http://httpbin.org/ip', proxies=proxies, timeout=10)\n    print(response.json())\nexcept Exception as e:\n    print(f'测试失败：{e}')\n```\n\n## 3. 使用 telnet 测试连接\n\n```bash\ntelnet 代理服务器 IP 8890\n```\n\n## 4. 检查代理类型\n\n```bash\n# 检查是否为 HTTP 代理\ncurl -v -x http://代理服务器 IP:8890 http://example.com\n\n# 检查是否为 SOCKS 代理\ncurl -v --socks5 代理服务器 IP:8890 http://example.com\n```\n\n## 5. 在线测试工具\n\n- https://httpbin.org/ip\n- https://api.ip.sb/ip\n- https://ipinfo.io/json\n\n## 常见问题排查\n\n| 问题 | 可能原因 | 解决方案 |\n|------|---------|---------|\n| 连接超时 | 防火墙/网络问题 | 检查防火墙设置 |\n| 认证失败 | 用户名密码错误 | 确认认证信息 |\n| 拒绝连接 | 代理未运行 | 检查代理服务状态 |\n\n**请提供更多信息以便我给出更具体的建议：**\n- 代理服务器地址是什么？\n- 需要测试哪种类型的代理（HTTP/SOCKS）？\n- 是否需要认证？\n\n⚠️ **注意**：请确保您有权使用该代理服务器，遵守相关法律法规。",
+    "reasoning": "",
+    "tool_calls": [],
+    "usage": {
+      "prompt_tokens": 18,
+      "completion_tokens": 553,
+      "total_tokens": 571,
+      "completion_tokens_details": {
+        "reasoning_tokens": 63,
+        "text_tokens": 553
+      },
+      "prompt_tokens_details": {
+        "text_tokens": 18
+      }
+    },
+    "finish_reason": "stop",
+    "duration": 10.905023,
+    "error": null
+  }
+}

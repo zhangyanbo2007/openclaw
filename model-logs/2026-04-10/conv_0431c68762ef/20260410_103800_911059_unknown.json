@@ -1,0 +1,34 @@
+{
+  "timestamp": "2026-04-10T10:38:00.911076",
+  "client_ip": "127.0.0.1",
+  "client": "unknown",
+  "user_id": "unknown",
+  "conversation_id": "conv_0431c68762ef",
+  "endpoint": "v1/chat/completions",
+  "model": "qwen3.5-plus",
+  "is_stream": false,
+  "request": {
+    "model": "qwen3.5-plus",
+    "messages": [
+      {
+        "role": "user",
+        "content": "hi"
+      }
+    ],
+    "parameters": {}
+  },
+  "response": {
+    "content": "",
+    "reasoning": "",
+    "tool_calls": [],
+    "usage": {},
+    "finish_reason": "",
+    "duration": 0.207674,
+    "error": {
+      "message": "Incorrect API key provided. For details, see: https://help.aliyun.com/zh/model-studio/error-code#apikey-error",
+      "type": "invalid_request_error",
+      "param": null,
+      "code": "invalid_api_key"
+    }
+  }
+}

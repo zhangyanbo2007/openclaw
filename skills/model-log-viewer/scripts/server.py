@@ -74,6 +74,11 @@ class LogViewerHandler(SimpleHTTPRequestHandler):
             self.get_config()
         elif parsed.path.startswith("/api/openclaw/models"):
             self.get_openclaw_models()
+        elif parsed.path == "/api/detect_agent":
+            self.detect_agent()
+        elif parsed.path == "/api/agent/models":
+            # GET request for backward compatibility
+            self.get_agent_models_post({})
         elif parsed.path == "/api/sync":
             # GET request: return current config
             self.get_config()
@@ -98,6 +103,8 @@ class LogViewerHandler(SimpleHTTPRequestHandler):
             self.save_config(body)
         elif parsed.path == "/api/sync":
             self.sync_to_openclaw_post(body)
+        elif parsed.path == "/api/agent/models":
+            self.get_agent_models_post(body)
         else:
             self.send_error(404)
 
@@ -748,6 +755,97 @@ class LogViewerHandler(SimpleHTTPRequestHandler):
         except Exception as e:
             self.send_json({"success": False, "error": str(e)})
 
+    def detect_agent(self):
+        """检测当前环境的智能体类型"""
+        home = Path.home()
+        openclaw_config = home / ".openclaw" / "openclaw.json"
+        claude_settings = home / ".claude" / "settings.json"
+
+        # 检测逻辑：优先检查 OpenClaw，因为当前技能运行在 OpenClaw 环境下
+        # 用户可以通过环境变量或查询参数强制指定
+        if openclaw_config.exists():
+            self.send_json({
+                "success": True,
+                "agentType": "openclaw",
+                "configPath": str(openclaw_config),
+                "autoDetected": True
+            })
+        elif claude_settings.exists():
+            self.send_json({
+                "success": True,
+                "agentType": "claudecode",
+                "configPath": str(claude_settings),
+                "autoDetected": True
+            })
+        else:
+            # 默认返回 OpenClaw
+            self.send_json({
+                "success": True,
+                "agentType": "openclaw",
+                "configPath": str(openclaw_config),
+                "autoDetected": False,
+                "default": True
+            })
+
+    def get_agent_models_post(self, body):
+        """根据智能体类型读取模型配置"""
+        agent_type = body.get("agentType", "openclaw")
+        home = Path.home()
+
+        if agent_type == "openclaw":
+            config_path = home / ".openclaw" / "openclaw.json"
+        else:  # claudecode
+            config_path = home / ".claude" / "settings.json"
+
+        if not config_path.exists():
+            self.send_json({"success": False, "error": f"配置文件不存在：{config_path}"})
+            return
+
+        try:
+            with open(config_path, "r", encoding="utf-8") as f:
+                config = json.load(f)
+
+            models = {}
+            if agent_type == "openclaw":
+                # OpenClaw 格式
+                providers = config.get("models", {}).get("providers", {})
+                for provider_name, provider_config in providers.items():
+                    base_url = provider_config.get("baseUrl", "")
+                    for model in provider_config.get("models", []):
+                        model_id = model.get("id", "")
+                        model_name = model.get("name", model_id)
+                        model_key = f"{provider_name}/{model_id}"
+                        models[model_key] = {
+                            "url": base_url,
+                            "name": model_name,
+                            "provider": provider_name,
+                            "model_id": model_id
+                        }
+            else:
+                # Claude Code 格式 - 从 settings.json 的 permissions 或其他位置读取
+                # TODO: 根据实际的 Claude Code settings.json 格式调整
+                providers = config.get("mcpServers", {}).get("openclaw-model-proxy", {}).get("models", {}).get("providers", {})
+                if not providers:
+                    # 尝试从其他可能的位置读取
+                    providers = config.get("models", {}).get("providers", {})
+
+                for provider_name, provider_config in providers.items():
+                    base_url = provider_config.get("baseUrl", "")
+                    for model in provider_config.get("models", []):
+                        model_id = model.get("id", "")
+                        model_name = model.get("name", model_id)
+                        model_key = f"{provider_name}/{model_id}"
+                        models[model_key] = {
+                            "url": base_url,
+                            "name": model_name,
+                            "provider": provider_name,
+                            "model_id": model_id
+                        }
+
+            self.send_json({"success": True, "models": models, "agentType": agent_type, "configPath": str(config_path)})
+        except Exception as e:
+            self.send_json({"success": False, "error": str(e)})
+
     def get_openclaw_models(self):
         """从 openclaw.json 读取所有模型配置"""
         openclaw_config = Path.home() / ".openclaw" / "openclaw.json"
@@ -781,7 +879,13 @@ class LogViewerHandler(SimpleHTTPRequestHandler):
             self.send_json({"success": False, "error": str(e)})
 
     def sync_to_openclaw_post(self, params):
-        """同步代理配置到 openclaw.json 并重启 gateway"""
+        """同步代理配置到智能体配置文件并重启 gateway"""
+        agent_type = params.get("agentType", "openclaw")
+
+        if agent_type == "claudecode":
+            return self.sync_to_claudecode_post(params)
+
+        # OpenClaw 模式
         try:
             # 读取当前 proxy_config.json
             config_file = BASE_DIR / "proxy_config.json"
@@ -880,6 +984,67 @@ class LogViewerHandler(SimpleHTTPRequestHandler):
                 "success": True,
                 "message": f"已同步 {len(port_to_model)} 个代理配置到 openclaw.json，删除了 {len(to_remove)} 个旧配置",
                 "restart": restart_result
+            })
+        except Exception as e:
+            self.send_json({"success": False, "error": str(e)})
+
+    def sync_to_claudecode_post(self, params):
+        """同步代理配置到 Claude Code settings.json"""
+        try:
+            # 读取当前 proxy_config.json
+            config_file = BASE_DIR / "proxy_config.json"
+            with open(config_file, "r", encoding="utf-8") as f:
+                proxy_config = json.load(f)
+
+            model_port_mapping = proxy_config.get("model_port_mapping", {})
+
+            # 读取 settings.json
+            settings_path = Path.home() / ".claude" / "settings.json"
+            if not settings_path.exists():
+                # 尝试当前目录
+                settings_path = BASE_DIR / "settings.json"
+
+            if not settings_path.exists():
+                self.send_json({"success": False, "error": "settings.json not found"})
+                return
+
+            with open(settings_path, "r", encoding="utf-8") as f:
+                settings = json.load(f)
+
+            # 反转映射：port -> model_key
+            port_to_model = {v: k for k, v in model_port_mapping.items()}
+
+            # 为每个端口生成 provider 配置
+            # Claude Code settings.json 格式可能不同，这里使用类似的结构
+            if "models" not in settings:
+                settings["models"] = {"providers": {}}
+            if "providers" not in settings["models"]:
+                settings["models"]["providers"] = {}
+
+            providers = settings["models"]["providers"]
+
+            for port_str, model_key in port_to_model.items():
+                port = int(port_str)
+                provider_name = f"localproxy-{port}"
+
+                providers[provider_name] = {
+                    "baseUrl": f"http://localhost:{port}/v1",
+                    "apiKey": "not-needed",
+                    "api": "openai-completions",
+                    "models": [{
+                        "id": model_key.split('/')[1],
+                        "name": f"LocalProxy ({port})",
+                        "api": "openai-completions"
+                    }]
+                }
+
+            # 写回 settings.json
+            with open(settings_path, "w", encoding="utf-8") as f:
+                json.dump(settings, f, indent=2, ensure_ascii=False)
+
+            self.send_json({
+                "success": True,
+                "message": f"已同步 {len(port_to_model)} 个代理配置到 settings.json"
             })
         except Exception as e:
             self.send_json({"success": False, "error": str(e)})

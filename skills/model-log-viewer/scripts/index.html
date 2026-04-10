@@ -63,6 +63,57 @@
             gap: 12px;
         }
 
+        /* 智能体类型选择器样式 */
+        .agent-type-selector {
+            background: white;
+            padding: 16px 20px;
+            border-radius: var(--radius-lg);
+            margin-bottom: 20px;
+            box-shadow: var(--shadow-md);
+            border: 1px solid var(--slate-200);
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            flex-wrap: wrap;
+        }
+
+        .agent-type-selector label {
+            font-weight: 600;
+            color: var(--slate-700);
+            font-size: 14px;
+        }
+
+        .agent-type-selector select {
+            padding: 8px 14px;
+            border: 1.5px solid var(--slate-200);
+            border-radius: var(--radius);
+            font-size: 14px;
+            color: var(--slate-700);
+            background: white;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .agent-type-selector select:focus {
+            outline: none;
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
+        }
+
+        .agent-type-status {
+            font-size: 13px;
+            color: var(--slate-500);
+            margin-left: auto;
+        }
+
+        .agent-type-status.auto-detected {
+            color: var(--success);
+        }
+
+        .agent-type-status.manual {
+            color: var(--warning);
+        }
+
         /* Drawer / 抽屉样式 */
         .drawer {
             background: white;
@@ -625,6 +676,16 @@
     <div class="container">
         <h1>📋 模型日志查看器</h1>
 
+        <!-- 智能体类型选择器 -->
+        <div class="agent-type-selector">
+            <label for="agentTypeSelect">🤖 智能体类型：</label>
+            <select id="agentTypeSelect" onchange="onAgentTypeChange()">
+                <option value="openclaw">OpenClaw</option>
+                <option value="claudecode">Claude Code</option>
+            </select>
+            <span id="agentTypeStatus" class="agent-type-status"></span>
+        </div>
+
         <!-- 模型本地代理配置 -->
         <div class="drawer" id="modelConfigDrawer">
             <div class="drawer-header" onclick="toggleDrawer()">
@@ -632,7 +693,7 @@
                 <div class="btn-group" style="margin: 0;" onclick="event.stopPropagation()">
                     <button class="btn btn-success" onclick="enableAllModels()">▶ 全部启用</button>
                     <button class="btn btn-danger" onclick="disableAllModels()">◼ 全部关闭</button>
-                    <button class="btn btn-warning" onclick="syncToOpenclaw()">🔄 同步到 openclaw.json</button>
+                    <button class="btn btn-warning" onclick="syncToAgent()">🔄 同步到智能体模型配置</button>
                 </div>
             </div>
             <div class="drawer-content" id="modelList">
@@ -701,6 +762,76 @@
     </div>
 
     <script>
+        // ========== 智能体类型检测与切换 ==========
+        let agentType = 'openclaw'; // 当前智能体类型：'openclaw' 或 'claudecode'
+        let agentConfigPath = ''; // 配置文件路径
+        let autoDetected = false; // 是否自动检测
+
+        // 检测当前环境的智能体类型
+        async function detectAgentType() {
+            try {
+                const response = await fetch('/api/detect_agent');
+                const result = await response.json();
+                if (result.success) {
+                    agentType = result.agentType;
+                    agentConfigPath = result.configPath;
+                    autoDetected = true;
+                    updateAgentTypeStatus(`自动检测到 ${agentType === 'openclaw' ? 'OpenClaw' : 'Claude Code'} 环境`);
+                    document.getElementById('agentTypeSelect').value = agentType;
+                    return true;
+                }
+            } catch (e) {
+                console.error('Agent detection failed:', e);
+            }
+            // 默认使用 OpenClaw
+            agentType = 'openclaw';
+            agentConfigPath = '~/.openclaw/openclaw.json';
+            autoDetected = true;
+            updateAgentTypeStatus('使用默认配置 (OpenClaw)');
+            return false;
+        }
+
+        function updateAgentTypeStatus(message, isManual = false) {
+            const statusEl = document.getElementById('agentTypeStatus');
+            statusEl.textContent = message;
+            statusEl.className = 'agent-type-status ' + (isManual ? 'manual' : 'auto-detected');
+        }
+
+        async function onAgentTypeChange() {
+            const select = document.getElementById('agentTypeSelect');
+            const newType = select.value;
+            if (newType === agentType) return;
+
+            agentType = newType;
+            autoDetected = false;
+            updateAgentTypeStatus(`手动切换为 ${agentType === 'openclaw' ? 'OpenClaw' : 'Claude Code'}`, true);
+
+            // 重新加载模型列表
+            await loadAgentModels();
+        }
+
+        async function loadAgentModels() {
+            try {
+                const response = await fetch(`/api/agent/models?t=${Date.now()}`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ agentType })
+                });
+                const result = await response.json();
+                if (result.success) {
+                    openclawModels = result.models;
+                    renderModelList();
+                } else {
+                    document.getElementById('modelList').innerHTML =
+                        `<div style="color: #dc3545;">加载失败：${result.error}</div>`;
+                }
+            } catch (e) {
+                console.error('loadAgentModels error:', e);
+                document.getElementById('modelList').innerHTML =
+                    `<div style="color: #dc3545;">加载失败：${e.message}</div>`;
+            }
+        }
+
         // ========== 模型代理配置相关 ==========
         let proxyConfig = null;
         let openclawModels = {};
@@ -1016,42 +1147,49 @@
             }
         }
 
-        async function syncToOpenclaw() {
+        async function syncToAgent() {
             const count = Object.keys(currentPortMapping).length;
+            const configName = agentType === 'openclaw' ? 'openclaw.json' : 'settings.json';
+            const agentName = agentType === 'openclaw' ? 'OpenClaw' : 'Claude Code';
+            const restartInfo = agentType === 'openclaw'
+                ? '2. 自动重启 OpenClaw Gateway（约 1-2 秒）\n3. 所有智能体将使用新的全局配置'
+                : '2. 配置已更新，Claude Code 将在下次启动时使用新配置';
+
             const confirmMsg = count > 0
-                ? `⚠️ 警告：同步配置会重启 OpenClaw Gateway！
+                ? `⚠️ 警告：同步配置会重启 ${agentName} 服务！
 
-确定要将 ${count} 个代理配置同步到 openclaw.json 吗？
-
-同步后将：
-1. 更新 openclaw.json 中的 localproxy-* 供应商配置
-2. 自动重启 OpenClaw Gateway（约 1-2 秒）
-3. 所有智能体将使用新的全局配置`
-                : `⚠️ 警告：同步配置会重启 OpenClaw Gateway！
-
-确定要同步配置到 openclaw.json 吗？
+确定要将 ${count} 个代理配置同步到 ${configName} 吗？
 
 同步后将：
-1. 更新 openclaw.json 中的 localproxy-* 供应商配置
-2. 自动重启 OpenClaw Gateway（约 1-2 秒）
-3. 所有智能体将使用新的全局配置`;
+1. 更新 ${configName} 中的 localproxy-* 供应商配置
+${restartInfo}`
+                : `⚠️ 警告：同步配置会重启 ${agentName} 服务！
+
+确定要同步配置到 ${configName} 吗？
+
+同步后将：
+1. 更新 ${configName} 中的 localproxy-* 供应商配置
+${restartInfo}`;
             if (!confirm(confirmMsg)) return;
             const resultDiv = document.getElementById('syncResult');
             resultDiv.className = 'sync-result show';
-            resultDiv.innerHTML = '<div class="alert alert-info">⏳ 正在同步配置并重启 gateway，请稍候...</div>';
+            resultDiv.innerHTML = `<div class="alert alert-info">⏳ 正在同步配置到 ${configName}，请稍候...</div>`;
             try {
                 const response = await fetch('/api/sync', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({})
+                    body: JSON.stringify({ agentType })
                 });
                 const result = await response.json();
                 if (result.success) {
+                    const resultAgentInfo = agentType === 'openclaw'
+                        ? '所有智能体将在重启后使用新的全局配置'
+                        : 'Claude Code 将在下次启动时使用新配置';
                     resultDiv.innerHTML = `
                         <div class="alert alert-success">✓ ${result.message}</div>
                         <div style="color: #666; font-size: 14px; margin-top: 10px;">
-                            <strong>Gateway 重启完成</strong><br>
-                            所有智能体将在重启后使用新的全局配置
+                            <strong>同步完成</strong><br>
+                            ${resultAgentInfo}
                         </div>
                     `;
                 } else {
@@ -1236,19 +1374,14 @@
         // ========== 页面加载 ==========
         window.onload = function() {
             console.log('Page loaded, starting initialization...');
-            // 默认打开抽屉，不恢复之前的关闭状态
-            // const savedState = localStorage.getItem('modelConfigDrawerOpen');
-            // if (savedState === 'false') {
-            //     closeDrawer();
-            // }
-            // 按顺序初始化：先加载配置，再加载模型，最后检查状态
-            loadConfig().then(() => {
-                console.log('loadConfig completed, loading models...');
-                loadOpenclawModels().then(() => {
-                    console.log('loadOpenclawModels completed, checking status...');
+            // 按顺序初始化：先检测智能体类型，再加载模型，最后检查状态
+            detectAgentType().then(() => {
+                loadAgentModels().then(() => {
+                    console.log('Agent models loaded, checking status...');
                     checkStatus();
                 });
             });
+            loadConfig();
             initDateSelect();
         };
     </script>

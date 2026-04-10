@@ -139,7 +139,7 @@ class ConversationLogger:
     def get_conversation_id(self, client_ip: str, messages: list, headers: dict) -> str:
         """
         生成或查找会话 ID
-        优先级：1. X-Session-ID 头 > 2. 用户 ID + /new 标记 > 3. 时间窗口关联
+        优先级：1. X-Session-ID 头 > 2. 用户 ID + /new 标记 > 3. 直接关联最近会话
         """
         # 尝试从请求头获取会话 ID
         session_id = headers.get("x-session-id") or headers.get("x-request-id")
@@ -156,17 +156,11 @@ class ConversationLogger:
             is_new = self.is_new_session(messages)
 
             if not is_new:
-                # 不是新会话，检查是否有已存在的子会话
-                now = datetime.now()
+                # 不是新会话，直接关联到同一用户的最近会话（不管时间）
                 for conv_id, conv_data in list(self.active_conversations.items()):
                     if conv_id.startswith(base_conv_id):
                         if conv_data['client_ip'] == client_ip:
-                            last_time = datetime.fromisoformat(conv_data['last_updated'])
-                            time_diff = (now - last_time).total_seconds()
-                            if time_diff <= self.time_window_seconds:
-                                return conv_id
-                            # 超时会话，清理
-                            del self.active_conversations[conv_id]
+                            return conv_id
 
             # 创建新的子会话（/new 标记或无匹配会话）
             conv_id = f"{base_conv_id}_{datetime.now().strftime('%H%M%S')}"

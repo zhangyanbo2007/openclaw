@@ -353,6 +353,9 @@
         "custom-dashscope-aliyuncs-com/qwen3.5-plus": {
           "alias": "Qwen3.5-Plus"
         },
+        "dashscope-wanx/wanx-video-v1": {
+          "alias": "通义万相视频生成"
+        },
         "zai/glm-5": {
           "alias": "GLM-5"
         },

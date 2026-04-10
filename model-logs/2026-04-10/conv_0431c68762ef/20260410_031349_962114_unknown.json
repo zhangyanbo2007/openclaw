@@ -1,0 +1,41 @@
+{
+  "timestamp": "2026-04-10T03:13:49.962138",
+  "client_ip": "127.0.0.1",
+  "client": "unknown",
+  "user_id": "unknown",
+  "conversation_id": "conv_0431c68762ef",
+  "endpoint": "v1/chat/completions",
+  "model": "qwen3.5-plus",
+  "is_stream": true,
+  "request": {
+    "model": "qwen3.5-plus",
+    "messages": [
+      {
+        "role": "user",
+        "content": "hi"
+      }
+    ],
+    "parameters": {
+      "stream": true
+    }
+  },
+  "response": {
+    "content": "Hi there! 👋 How can I help you today?",
+    "reasoning": "",
+    "tool_calls": [],
+    "usage": {
+      "prompt_tokens": 11,
+      "completion_tokens": 464,
+      "total_tokens": 475,
+      "completion_tokens_details": {
+        "reasoning_tokens": 447,
+        "text_tokens": 464
+      },
+      "prompt_tokens_details": {
+        "text_tokens": 11
+      }
+    },
+    "finish_reason": "stop",
+    "duration": 9.152153
+  }
+}

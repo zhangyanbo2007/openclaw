@@ -1,0 +1,33 @@
+{
+  "timestamp": "2026-04-10T03:33:53.238342",
+  "client_ip": "127.0.0.1",
+  "client": "unknown",
+  "user_id": "unknown",
+  "conversation_id": "conv_0431c68762ef",
+  "endpoint": "v1/chat/completions",
+  "model": "gemma-4-31b-it",
+  "is_stream": false,
+  "request": {
+    "model": "gemma-4-31b-it",
+    "messages": [
+      {
+        "role": "user",
+        "content": "hi"
+      }
+    ],
+    "parameters": {}
+  },
+  "response": {
+    "content": "Hello! How can I help you today?",
+    "reasoning": null,
+    "tool_calls": [],
+    "usage": {
+      "prompt_tokens": 14,
+      "total_tokens": 24,
+      "completion_tokens": 10,
+      "prompt_tokens_details": null
+    },
+    "finish_reason": "stop",
+    "duration": 0.406204
+  }
+}

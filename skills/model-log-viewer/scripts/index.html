@@ -1097,18 +1097,33 @@
         let currentConversations = [];
         let currentRequests = [];
 
-        // 初始化日期时间选择器 - 使用两个 datetime-local 输入
-        function initDateSelect() {
-            const now = new Date();
-            const today = now.toISOString().split('T')[0];
-
+        // 初始化日期时间选择器 - 自动选择有日志的最新日期
+        async function initDateSelect() {
             const datetimeStart = document.getElementById('datetimeStart');
             const datetimeEnd = document.getElementById('datetimeEnd');
 
-            // 默认开始时间为当天 00:00
-            datetimeStart.value = `${today}T00:00`;
+            // 先尝试获取有日志的日期列表
+            try {
+                const resp = await fetch('/api/available_dates');
+                const result = await resp.json();
+                const dates = result.dates || [];
 
-            // 默认结束时间为当天 23:59
+                if (dates.length > 0) {
+                    // 选择最新的有日志的日期
+                    const latestDate = dates[0]; // 假设按降序排列
+                    datetimeStart.value = `${latestDate}T00:00`;
+                    datetimeEnd.value = `${latestDate}T23:59`;
+                    console.log('Auto-selected date:', latestDate);
+                    return;
+                }
+            } catch (e) {
+                console.log('Failed to fetch available dates, using current date');
+            }
+
+            // 如果没有可用日期，使用当前日期
+            const now = new Date();
+            const today = now.toISOString().split('T')[0];
+            datetimeStart.value = `${today}T00:00`;
             datetimeEnd.value = `${today}T23:59`;
         }
 

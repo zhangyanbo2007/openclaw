@@ -1,0 +1,33 @@
+{
+  "timestamp": "2026-04-10T03:34:23.440816",
+  "client_ip": "127.0.0.1",
+  "client": "unknown",
+  "user_id": "unknown",
+  "conversation_id": "conv_0431c68762ef",
+  "endpoint": "v1/chat/completions",
+  "model": "qwen3.5-27b",
+  "is_stream": false,
+  "request": {
+    "model": "qwen3.5-27b",
+    "messages": [
+      {
+        "role": "user",
+        "content": "hi"
+      }
+    ],
+    "parameters": {}
+  },
+  "response": {
+    "content": "\n\nHi there! How's it going? Is there anything I can help you with today?",
+    "reasoning": "Thinking Process:\n\n1.  **Analyze the Request:**\n    *   Input: \"hi\"\n    *   Intent: Greeting / Starting a conversation.\n    *   Tone: Casual, friendly.\n    *   Expected Output: A friendly greeting in return, offering assistance.\n\n2.  **Determine the Response:**\n    *   Acknowledge the greeting.\n    *   Offer help.\n    *   Keep it concise and warm.\n\n3.  **Drafting Options:**\n    *   Option 1: \"Hello! How can I help you?\" (Standard)\n    *   Option 2: \"Hi there! What's on your mind today?\" (Friendly)\n    *   Option 3: \"Hey! How's it going?\" (Casual)\n\n4.  **Selecting the Best Option:** Option 2 strikes a good balance between friendly and helpful.\n\n5.  **Final Polish:** \"Hi there! How's it going? Is there anything I can help you with today?\"\n\n6.  **Final Output Generation:** (Matches the selected draft)cw\n",
+    "tool_calls": [],
+    "usage": {
+      "prompt_tokens": 11,
+      "total_tokens": 267,
+      "completion_tokens": 256,
+      "prompt_tokens_details": null
+    },
+    "finish_reason": "stop",
+    "duration": 4.48862
+  }
+}

@@ -1,0 +1,47 @@
+{
+  "timestamp": "2026-04-10T09:26:54.055624",
+  "client_ip": "127.0.0.1",
+  "client": "unknown",
+  "user_id": "unknown",
+  "conversation_id": "conv_8d936be547b9",
+  "endpoint": "v1/chat/completions",
+  "model": "qwen3.5-plus",
+  "is_stream": true,
+  "request": {
+    "model": "qwen3.5-plus",
+    "messages": [
+      {
+        "role": "user",
+        "content": [
+          {
+            "type": "text",
+            "text": "你好"
+          }
+        ]
+      }
+    ],
+    "parameters": {
+      "stream": true
+    }
+  },
+  "response": {
+    "content": "你好！有什么我可以帮你的吗？",
+    "reasoning": "",
+    "tool_calls": [],
+    "usage": {
+      "prompt_tokens": 11,
+      "completion_tokens": 450,
+      "total_tokens": 461,
+      "completion_tokens_details": {
+        "reasoning_tokens": 437,
+        "text_tokens": 450
+      },
+      "prompt_tokens_details": {
+        "text_tokens": 11
+      }
+    },
+    "finish_reason": "stop",
+    "duration": 8.73662,
+    "error": null
+  }
+}

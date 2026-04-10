@@ -1,0 +1,29 @@
+{
+  "timestamp": "2026-04-10T09:25:33.493576",
+  "client_ip": "127.0.0.1",
+  "client": "unknown",
+  "user_id": "unknown",
+  "conversation_id": "conv_092533_493470",
+  "endpoint": "v1/chat/completions",
+  "model": "",
+  "is_stream": false,
+  "request": {
+    "model": "unknown",
+    "messages": [],
+    "parameters": {}
+  },
+  "response": {
+    "content": "",
+    "reasoning": "",
+    "tool_calls": [],
+    "usage": {},
+    "finish_reason": "",
+    "duration": 0.189019,
+    "error": {
+      "message": "Request body is required.",
+      "type": "invalid_request_error",
+      "param": null,
+      "code": null
+    }
+  }
+}

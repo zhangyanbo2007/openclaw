@@ -1,0 +1,17 @@
+{
+  "conversation_id": "conv_011603_957236",
+  "user_id": "unknown",
+  "client": "unknown",
+  "first_message": null,
+  "started_at": "2026-04-10T01:16:03.957571",
+  "requests": [
+    {
+      "timestamp": "2026-04-10T01:16:03.957571",
+      "model": "",
+      "tokens": 0,
+      "user_id": "unknown"
+    }
+  ],
+  "last_updated": "2026-04-10T01:16:03.957571",
+  "request_count": 1
+}

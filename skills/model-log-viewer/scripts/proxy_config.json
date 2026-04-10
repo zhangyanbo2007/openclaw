@@ -1,13 +1,13 @@
 {
   "enabled_models": [
-    "vllm-5555/qwen3.5-27b",
     "vllm-5557/gemma-4-31b-it",
-    "custom-dashscope-aliyuncs-com/qwen3.5-plus"
+    "custom-dashscope-aliyuncs-com/qwen3.5-plus",
+    "vllm-5555/qwen3.5-27b"
   ],
   "model_port_mapping": {
-    "vllm-5555/qwen3.5-27b": 8888,
     "vllm-5557/gemma-4-31b-it": 8889,
-    "custom-dashscope-aliyuncs-com/qwen3.5-plus": 8890
+    "custom-dashscope-aliyuncs-com/qwen3.5-plus": 8890,
+    "vllm-5555/qwen3.5-27b": 8888
   },
   "logs_dir": "/home/zhangyanbo/.openclaw/model-logs",
   "session": {

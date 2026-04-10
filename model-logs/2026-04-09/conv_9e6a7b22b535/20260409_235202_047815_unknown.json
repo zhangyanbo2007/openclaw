@@ -1,0 +1,30 @@
+{
+  "timestamp": "2026-04-09T23:52:02.047835",
+  "client_ip": "127.0.0.1",
+  "client": "unknown",
+  "user_id": "unknown",
+  "conversation_id": "conv_9e6a7b22b535",
+  "endpoint": "v1/chat/completions",
+  "model": "qwen3.5-plus",
+  "is_stream": false,
+  "request": {
+    "model": "qwen3.5-plus",
+    "messages": [
+      {
+        "role": "user",
+        "content": "测试"
+      }
+    ],
+    "parameters": {
+      "max_tokens": 10
+    }
+  },
+  "response": {
+    "content": "",
+    "reasoning": "",
+    "tool_calls": [],
+    "usage": {},
+    "finish_reason": "",
+    "duration": 0.557405
+  }
+}

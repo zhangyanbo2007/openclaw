@@ -194,7 +194,7 @@ class ConversationLogger:
 
     def parse_sse_stream(self, sse_text: str) -> dict:
         """解析 SSE 流，提取完整的响应内容"""
-        result = {"content": "", "reasoning": "", "usage": {}, "finish_reason": None}
+        result = {"content": "", "reasoning": "", "usage": {}, "finish_reason": None, "error": None}
         lines = sse_text.split("\n")
 
         for line in lines:
@@ -205,11 +205,21 @@ class ConversationLogger:
                 try:
                     chunk = json.loads(data)
 
+                    # 检查是否有错误
+                    if chunk.get("error"):
+                        result["error"] = chunk.get("error")
+                        break
+
                     # 直接检查 chunk 是否有 usage（某些 vLLM 版本在 choices 为空的 chunk 中返回）
                     if chunk.get("usage"):
                         result["usage"] = chunk["usage"]
 
-                    choice = chunk.get("choices", [{}])[0]
+                    choices = chunk.get("choices", [])
+                    if not choices or len(choices) == 0:
+                        # 空 choices，可能是最后一个包含 usage 的 chunk
+                        continue
+
+                    choice = choices[0]
                     delta = choice.get("delta", {})
 
                     # 累加内容
@@ -221,8 +231,9 @@ class ConversationLogger:
                     # 检查 finish_reason
                     if choice.get("finish_reason"):
                         result["finish_reason"] = choice["finish_reason"]
-                except:
-                    pass
+                except Exception as e:
+                    # 记录解析错误
+                    result["error"] = str(e)
 
         return result
 
@@ -250,6 +261,7 @@ class ConversationLogger:
             tool_calls = response_data.get("tool_calls", [])
             usage = response_data.get("usage", {})
             finish_reason = response_data.get("finish_reason", "")
+            error = response_data.get("error")  # 流式响应可能的错误
         else:
             choice = response_data.get("choices", [{}])[0] if response_data.get("choices") else {}
             message = choice.get("message", {})
@@ -258,6 +270,7 @@ class ConversationLogger:
             tool_calls = message.get("tool_calls") or choice.get("tool_calls", [])
             usage = response_data.get("usage", {})
             finish_reason = choice.get("finish_reason", "")
+            error = response_data.get("error")  # 非流式响应可能的错误
 
         record = {
             "timestamp": datetime.now().isoformat(),
@@ -279,7 +292,8 @@ class ConversationLogger:
                 "tool_calls": tool_calls,
                 "usage": usage,
                 "finish_reason": finish_reason,
-                "duration": duration  # 新增：运行时间（秒）
+                "duration": duration,  # 新增：运行时间（秒）
+                "error": error  # 新增：错误信息（如果有）
             }
         }
 
@@ -450,8 +464,11 @@ class VLLMProxy:
             forward_headers["Authorization"] = f"Bearer {api_key}"
         request_start = datetime.now()
 
+        # 配置超时：连接 10 秒，读取 120 秒（推理模型可能需要较长时间）
+        timeout = aiohttp.ClientTimeout(total=120, connect=10, sock_read=120)
+
         try:
-            async with aiohttp.ClientSession() as session:
+            async with aiohttp.ClientSession(timeout=timeout) as session:
                 async with session.request(
                     method=request.method,
                     url=url,

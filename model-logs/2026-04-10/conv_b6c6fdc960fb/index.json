@@ -1,0 +1,26 @@
+{
+  "conversation_id": "conv_b6c6fdc960fb",
+  "user_id": "unknown",
+  "client": "unknown",
+  "first_message": {
+    "role": "system",
+    "content": "You are a personal assistant operating inside OpenClaw.\n## Tooling\nStructured tool definitions are the source of truth for tool names, descriptions, and parameters.\nTool names are case-sensitive. Call tools exactly as listed in the structured tool definitions.\n"
+  },
+  "started_at": "2026-04-10T09:23:58.117820",
+  "requests": [
+    {
+      "timestamp": "2026-04-10T09:23:58.117820",
+      "model": "qwen3.5-plus",
+      "tokens": 6738,
+      "user_id": "unknown"
+    },
+    {
+      "timestamp": "2026-04-10T09:25:00.030816",
+      "model": "qwen3.5-plus",
+      "tokens": 26375,
+      "user_id": "unknown"
+    }
+  ],
+  "last_updated": "2026-04-10T09:25:00.030816",
+  "request_count": 2
+}

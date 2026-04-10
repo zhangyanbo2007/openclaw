@@ -1,0 +1,80 @@
+{
+  "conversation_id": "conv_0431c68762ef",
+  "user_id": "unknown",
+  "client": "unknown",
+  "first_message": {
+    "role": "user",
+    "content": "hi"
+  },
+  "started_at": "2026-04-10T01:58:13.388179",
+  "requests": [
+    {
+      "timestamp": "2026-04-10T01:58:13.388179",
+      "model": "qwen3.5-plus",
+      "tokens": 638,
+      "user_id": "unknown"
+    },
+    {
+      "timestamp": "2026-04-10T01:59:37.612520",
+      "model": "qwen3.5-plus",
+      "tokens": 630,
+      "user_id": "unknown"
+    },
+    {
+      "timestamp": "2026-04-10T02:35:54.565893",
+      "model": "qwen3.5-plus",
+      "tokens": 235,
+      "user_id": "unknown"
+    },
+    {
+      "timestamp": "2026-04-10T03:13:49.962138",
+      "model": "qwen3.5-plus",
+      "tokens": 475,
+      "user_id": "unknown"
+    },
+    {
+      "timestamp": "2026-04-10T03:14:11.090934",
+      "model": "qwen3.5-plus",
+      "tokens": 610,
+      "user_id": "unknown"
+    },
+    {
+      "timestamp": "2026-04-10T03:14:23.873794",
+      "model": "qwen3.5-plus",
+      "tokens": 570,
+      "user_id": "unknown"
+    },
+    {
+      "timestamp": "2026-04-10T03:14:37.975134",
+      "model": "qwen3.5-plus",
+      "tokens": 647,
+      "user_id": "unknown"
+    },
+    {
+      "timestamp": "2026-04-10T03:33:53.238342",
+      "model": "gemma-4-31b-it",
+      "tokens": 24,
+      "user_id": "unknown"
+    },
+    {
+      "timestamp": "2026-04-10T03:34:01.013171",
+      "model": "qwen3.5-plus",
+      "tokens": 402,
+      "user_id": "unknown"
+    },
+    {
+      "timestamp": "2026-04-10T03:34:23.440816",
+      "model": "qwen3.5-27b",
+      "tokens": 267,
+      "user_id": "unknown"
+    },
+    {
+      "timestamp": "2026-04-10T03:40:02.659593",
+      "model": "qwen3.5-plus",
+      "tokens": 1119,
+      "user_id": "unknown"
+    }
+  ],
+  "last_updated": "2026-04-10T03:40:02.659593",
+  "request_count": 11
+}

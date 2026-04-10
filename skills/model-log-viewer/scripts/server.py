@@ -54,6 +54,8 @@ class LogViewerHandler(SimpleHTTPRequestHandler):
             )
         elif parsed.path.startswith("/api/conversations") or parsed.path.startswith("/api/logs/conversations"):
             self.get_conversations(query.get("date", [datetime.now().strftime("%Y-%m-%d")])[0])
+        elif parsed.path == "/api/available_dates":
+            self.get_available_dates()
         elif parsed.path.startswith("/api/requests") or parsed.path.startswith("/api/logs/requests"):
             self.get_requests(query.get("date", [datetime.now().strftime("%Y-%m-%d")])[0],
                              query.get("start", ["00:00"])[0],
@@ -133,6 +135,15 @@ class LogViewerHandler(SimpleHTTPRequestHandler):
                         conversations.append(conv_data)
 
         self.send_json({"success": True, "conversations": conversations})
+
+    def get_available_dates(self):
+        """获取有日志的日期列表"""
+        dates = []
+        if LOGS_DIR.exists():
+            for d in sorted(LOGS_DIR.iterdir(), reverse=True):
+                if d.is_dir() and d.name.startswith("2026-"):
+                    dates.append(d.name)
+        self.send_json({"success": True, "dates": dates})
 
     def get_requests(self, date, time_start="00:00", time_end="23:59"):
         """获取所有请求数据（用于前端处理）"""

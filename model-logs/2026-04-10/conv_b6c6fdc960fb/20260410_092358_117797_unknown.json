@@ -1,0 +1,253 @@
+{
+  "timestamp": "2026-04-10T09:23:58.117820",
+  "client_ip": "127.0.0.1",
+  "client": "unknown",
+  "user_id": "unknown",
+  "conversation_id": "conv_b6c6fdc960fb",
+  "endpoint": "v1/chat/completions",
+  "model": "qwen3.5-plus",
+  "is_stream": true,
+  "request": {
+    "model": "qwen3.5-plus",
+    "messages": [
+      {
+        "role": "system",
+        "content": "You are a personal assistant operating inside OpenClaw.\n## Tooling\nStructured tool definitions are the source of truth for tool names, descriptions, and parameters.\nTool names are case-sensitive. Call tools exactly as listed in the structured tool definitions.\n"
+      },
+      {
+        "role": "user",
+        "content": [
+          {
+            "type": "text",
+            "text": "Sender (untrusted metadata):\n```json\n{\n  \"label\": \"openclaw-control-ui\",\n  \"id\": \"openclaw-control-ui\"\n}\n```\n\n[Fri 2026-04-10 03:34 GMT+8] 那再试试吧"
+          }
+        ]
+      }
+    ],
+    "parameters": {
+      "tools": [
+        {
+          "type": "function",
+          "function": {
+            "name": "tool_0",
+            "description": "This is tool number 0. This is tool number 0. This is tool number 0. This is tool number 0. This is tool number 0. This is tool number 0. This is tool number 0. This is tool number 0. This is tool number 0. This is tool number 0. This is tool number 0. This is tool number 0. This is tool number 0. This is tool number 0. This is tool number 0. This is tool number 0. This is tool number 0. This is tool number 0. This is tool number 0. This is tool number 0. This is tool number 0. This is tool number 0. This is tool number 0. This is tool number 0. This is tool number 0. This is tool number 0. This is tool number 0. This is tool number 0. This is tool number 0. This is tool number 0. This is tool number 0. This is tool number 0. This is tool number 0. This is tool number 0. This is tool number 0. This is tool number 0. This is tool number 0. This is tool number 0. This is tool number 0. This is tool number 0. This is tool number 0. This is tool number 0. This is tool number 0. This is tool number 0. This is tool number 0. This is tool number 0. This is tool number 0. This is tool number 0. This is tool number 0. This is tool number 0. ",
+            "parameters": {
+              "type": "object",
+              "properties": {
+                "param1": {
+                  "type": "string",
+                  "description": "Parameter 1 description. Parameter 1 description. Parameter 1 description. Parameter 1 description. Parameter 1 description. Parameter 1 description. Parameter 1 description. Parameter 1 description. Parameter 1 description. Parameter 1 description. Parameter 1 description. Parameter 1 description. Parameter 1 description. Parameter 1 description. Parameter 1 description. Parameter 1 description. Parameter 1 description. Parameter 1 description. Parameter 1 description. Parameter 1 description. "
+                },
+                "param2": {
+                  "type": "number",
+                  "description": "Parameter 2 description. Parameter 2 description. Parameter 2 description. Parameter 2 description. Parameter 2 description. Parameter 2 description. Parameter 2 description. Parameter 2 description. Parameter 2 description. Parameter 2 description. Parameter 2 description. Parameter 2 description. Parameter 2 description. Parameter 2 description. Parameter 2 description. Parameter 2 description. Parameter 2 description. Parameter 2 description. Parameter 2 description. Parameter 2 description. "
+                }
+              }
+            }
+          }
+        },
+        {
+          "type": "function",
+          "function": {
+            "name": "tool_1",
+            "description": "This is tool number 1. This is tool number 1. This is tool number 1. This is tool number 1. This is tool number 1. This is tool number 1. This is tool number 1. This is tool number 1. This is tool number 1. This is tool number 1. This is tool number 1. This is tool number 1. This is tool number 1. This is tool number 1. This is tool number 1. This is tool number 1. This is tool number 1. This is tool number 1. This is tool number 1. This is tool number 1. This is tool number 1. This is tool number 1. This is tool number 1. This is tool number 1. This is tool number 1. This is tool number 1. This is tool number 1. This is tool number 1. This is tool number 1. This is tool number 1. This is tool number 1. This is tool number 1. This is tool number 1. This is tool number 1. This is tool number 1. This is tool number 1. This is tool number 1. This is tool number 1. This is tool number 1. This is tool number 1. This is tool number 1. This is tool number 1. This is tool number 1. This is tool number 1. This is tool number 1. This is tool number 1. This is tool number 1. This is tool number 1. This is tool number 1. This is tool number 1. ",
+            "parameters": {
+              "type": "object",
+              "properties": {
+                "param1": {
+                  "type": "string",
+                  "description": "Parameter 1 description. Parameter 1 description. Parameter 1 description. Parameter 1 description. Parameter 1 description. Parameter 1 description. Parameter 1 description. Parameter 1 description. Parameter 1 description. Parameter 1 description. Parameter 1 description. Parameter 1 description. Parameter 1 description. Parameter 1 description. Parameter 1 description. Parameter 1 description. Parameter 1 description. Parameter 1 description. Parameter 1 description. Parameter 1 description. "
+                },
+                "param2": {
+                  "type": "number",
+                  "description": "Parameter 2 description. Parameter 2 description. Parameter 2 description. Parameter 2 description. Parameter 2 description. Parameter 2 description. Parameter 2 description. Parameter 2 description. Parameter 2 description. Parameter 2 description. Parameter 2 description. Parameter 2 description. Parameter 2 description. Parameter 2 description. Parameter 2 description. Parameter 2 description. Parameter 2 description. Parameter 2 description. Parameter 2 description. Parameter 2 description. "
+                }
+              }
+            }
+          }
+        },
+        {
+          "type": "function",
+          "function": {
+            "name": "tool_2",
+            "description": "This is tool number 2. This is tool number 2. This is tool number 2. This is tool number 2. This is tool number 2. This is tool number 2. This is tool number 2. This is tool number 2. This is tool number 2. This is tool number 2. This is tool number 2. This is tool number 2. This is tool number 2. This is tool number 2. This is tool number 2. This is tool number 2. This is tool number 2. This is tool number 2. This is tool number 2. This is tool number 2. This is tool number 2. This is tool number 2. This is tool number 2. This is tool number 2. This is tool number 2. This is tool number 2. This is tool number 2. This is tool number 2. This is tool number 2. This is tool number 2. This is tool number 2. This is tool number 2. This is tool number 2. This is tool number 2. This is tool number 2. This is tool number 2. This is tool number 2. This is tool number 2. This is tool number 2. This is tool number 2. This is tool number 2. This is tool number 2. This is tool number 2. This is tool number 2. This is tool number 2. This is tool number 2. This is tool number 2. This is tool number 2. This is tool number 2. This is tool number 2. ",
+            "parameters": {
+              "type": "object",
+              "properties": {
+                "param1": {
+                  "type": "string",
+                  "description": "Parameter 1 description. Parameter 1 description. Parameter 1 description. Parameter 1 description. Parameter 1 description. Parameter 1 description. Parameter 1 description. Parameter 1 description. Parameter 1 description. Parameter 1 description. Parameter 1 description. Parameter 1 description. Parameter 1 description. Parameter 1 description. Parameter 1 description. Parameter 1 description. Parameter 1 description. Parameter 1 description. Parameter 1 description. Parameter 1 description. "
+                },
+                "param2": {
+                  "type": "number",
+                  "description": "Parameter 2 description. Parameter 2 description. Parameter 2 description. Parameter 2 description. Parameter 2 description. Parameter 2 description. Parameter 2 description. Parameter 2 description. Parameter 2 description. Parameter 2 description. Parameter 2 description. Parameter 2 description. Parameter 2 description. Parameter 2 description. Parameter 2 description. Parameter 2 description. Parameter 2 description. Parameter 2 description. Parameter 2 description. Parameter 2 description. "
+                }
+              }
+            }
+          }
+        },
+        {
+          "type": "function",
+          "function": {
+            "name": "tool_3",
+            "description": "This is tool number 3. This is tool number 3. This is tool number 3. This is tool number 3. This is tool number 3. This is tool number 3. This is tool number 3. This is tool number 3. This is tool number 3. This is tool number 3. This is tool number 3. This is tool number 3. This is tool number 3. This is tool number 3. This is tool number 3. This is tool number 3. This is tool number 3. This is tool number 3. This is tool number 3. This is tool number 3. This is tool number 3. This is tool number 3. This is tool number 3. This is tool number 3. This is tool number 3. This is tool number 3. This is tool number 3. This is tool number 3. This is tool number 3. This is tool number 3. This is tool number 3. This is tool number 3. This is tool number 3. This is tool number 3. This is tool number 3. This is tool number 3. This is tool number 3. This is tool number 3. This is tool number 3. This is tool number 3. This is tool number 3. This is tool number 3. This is tool number 3. This is tool number 3. This is tool number 3. This is tool number 3. This is tool number 3. This is tool number 3. This is tool number 3. This is tool number 3. ",
+            "parameters": {
+              "type": "object",
+              "properties": {
+                "param1": {
+                  "type": "string",
+                  "description": "Parameter 1 description. Parameter 1 description. Parameter 1 description. Parameter 1 description. Parameter 1 description. Parameter 1 description. Parameter 1 description. Parameter 1 description. Parameter 1 description. Parameter 1 description. Parameter 1 description. Parameter 1 description. Parameter 1 description. Parameter 1 description. Parameter 1 description. Parameter 1 description. Parameter 1 description. Parameter 1 description. Parameter 1 description. Parameter 1 description. "
+                },
+                "param2": {
+                  "type": "number",
+                  "description": "Parameter 2 description. Parameter 2 description. Parameter 2 description. Parameter 2 description. Parameter 2 description. Parameter 2 description. Parameter 2 description. Parameter 2 description. Parameter 2 description. Parameter 2 description. Parameter 2 description. Parameter 2 description. Parameter 2 description. Parameter 2 description. Parameter 2 description. Parameter 2 description. Parameter 2 description. Parameter 2 description. Parameter 2 description. Parameter 2 description. "
+                }
+              }
+            }
+          }
+        },
+        {
+          "type": "function",
+          "function": {
+            "name": "tool_4",
+            "description": "This is tool number 4. This is tool number 4. This is tool number 4. This is tool number 4. This is tool number 4. This is tool number 4. This is tool number 4. This is tool number 4. This is tool number 4. This is tool number 4. This is tool number 4. This is tool number 4. This is tool number 4. This is tool number 4. This is tool number 4. This is tool number 4. This is tool number 4. This is tool number 4. This is tool number 4. This is tool number 4. This is tool number 4. This is tool number 4. This is tool number 4. This is tool number 4. This is tool number 4. This is tool number 4. This is tool number 4. This is tool number 4. This is tool number 4. This is tool number 4. This is tool number 4. This is tool number 4. This is tool number 4. This is tool number 4. This is tool number 4. This is tool number 4. This is tool number 4. This is tool number 4. This is tool number 4. This is tool number 4. This is tool number 4. This is tool number 4. This is tool number 4. This is tool number 4. This is tool number 4. This is tool number 4. This is tool number 4. This is tool number 4. This is tool number 4. This is tool number 4. ",
+            "parameters": {
+              "type": "object",
+              "properties": {
+                "param1": {
+                  "type": "string",
+                  "description": "Parameter 1 description. Parameter 1 description. Parameter 1 description. Parameter 1 description. Parameter 1 description. Parameter 1 description. Parameter 1 description. Parameter 1 description. Parameter 1 description. Parameter 1 description. Parameter 1 description. Parameter 1 description. Parameter 1 description. Parameter 1 description. Parameter 1 description. Parameter 1 description. Parameter 1 description. Parameter 1 description. Parameter 1 description. Parameter 1 description. "
+                },
+                "param2": {
+                  "type": "number",
+                  "description": "Parameter 2 description. Parameter 2 description. Parameter 2 description. Parameter 2 description. Parameter 2 description. Parameter 2 description. Parameter 2 description. Parameter 2 description. Parameter 2 description. Parameter 2 description. Parameter 2 description. Parameter 2 description. Parameter 2 description. Parameter 2 description. Parameter 2 description. Parameter 2 description. Parameter 2 description. Parameter 2 description. Parameter 2 description. Parameter 2 description. "
+                }
+              }
+            }
+          }
+        },
+        {
+          "type": "function",
+          "function": {
+            "name": "tool_5",
+            "description": "This is tool number 5. This is tool number 5. This is tool number 5. This is tool number 5. This is tool number 5. This is tool number 5. This is tool number 5. This is tool number 5. This is tool number 5. This is tool number 5. This is tool number 5. This is tool number 5. This is tool number 5. This is tool number 5. This is tool number 5. This is tool number 5. This is tool number 5. This is tool number 5. This is tool number 5. This is tool number 5. This is tool number 5. This is tool number 5. This is tool number 5. This is tool number 5. This is tool number 5. This is tool number 5. This is tool number 5. This is tool number 5. This is tool number 5. This is tool number 5. This is tool number 5. This is tool number 5. This is tool number 5. This is tool number 5. This is tool number 5. This is tool number 5. This is tool number 5. This is tool number 5. This is tool number 5. This is tool number 5. This is tool number 5. This is tool number 5. This is tool number 5. This is tool number 5. This is tool number 5. This is tool number 5. This is tool number 5. This is tool number 5. This is tool number 5. This is tool number 5. ",
+            "parameters": {
+              "type": "object",
+              "properties": {
+                "param1": {
+                  "type": "string",
+                  "description": "Parameter 1 description. Parameter 1 description. Parameter 1 description. Parameter 1 description. Parameter 1 description. Parameter 1 description. Parameter 1 description. Parameter 1 description. Parameter 1 description. Parameter 1 description. Parameter 1 description. Parameter 1 description. Parameter 1 description. Parameter 1 description. Parameter 1 description. Parameter 1 description. Parameter 1 description. Parameter 1 description. Parameter 1 description. Parameter 1 description. "
+                },
+                "param2": {
+                  "type": "number",
+                  "description": "Parameter 2 description. Parameter 2 description. Parameter 2 description. Parameter 2 description. Parameter 2 description. Parameter 2 description. Parameter 2 description. Parameter 2 description. Parameter 2 description. Parameter 2 description. Parameter 2 description. Parameter 2 description. Parameter 2 description. Parameter 2 description. Parameter 2 description. Parameter 2 description. Parameter 2 description. Parameter 2 description. Parameter 2 description. Parameter 2 description. "
+                }
+              }
+            }
+          }
+        },
+        {
+          "type": "function",
+          "function": {
+            "name": "tool_6",
+            "description": "This is tool number 6. This is tool number 6. This is tool number 6. This is tool number 6. This is tool number 6. This is tool number 6. This is tool number 6. This is tool number 6. This is tool number 6. This is tool number 6. This is tool number 6. This is tool number 6. This is tool number 6. This is tool number 6. This is tool number 6. This is tool number 6. This is tool number 6. This is tool number 6. This is tool number 6. This is tool number 6. This is tool number 6. This is tool number 6. This is tool number 6. This is tool number 6. This is tool number 6. This is tool number 6. This is tool number 6. This is tool number 6. This is tool number 6. This is tool number 6. This is tool number 6. This is tool number 6. This is tool number 6. This is tool number 6. This is tool number 6. This is tool number 6. This is tool number 6. This is tool number 6. This is tool number 6. This is tool number 6. This is tool number 6. This is tool number 6. This is tool number 6. This is tool number 6. This is tool number 6. This is tool number 6. This is tool number 6. This is tool number 6. This is tool number 6. This is tool number 6. ",
+            "parameters": {
+              "type": "object",
+              "properties": {
+                "param1": {
+                  "type": "string",
+                  "description": "Parameter 1 description. Parameter 1 description. Parameter 1 description. Parameter 1 description. Parameter 1 description. Parameter 1 description. Parameter 1 description. Parameter 1 description. Parameter 1 description. Parameter 1 description. Parameter 1 description. Parameter 1 description. Parameter 1 description. Parameter 1 description. Parameter 1 description. Parameter 1 description. Parameter 1 description. Parameter 1 description. Parameter 1 description. Parameter 1 description. "
+                },
+                "param2": {
+                  "type": "number",
+                  "description": "Parameter 2 description. Parameter 2 description. Parameter 2 description. Parameter 2 description. Parameter 2 description. Parameter 2 description. Parameter 2 description. Parameter 2 description. Parameter 2 description. Parameter 2 description. Parameter 2 description. Parameter 2 description. Parameter 2 description. Parameter 2 description. Parameter 2 description. Parameter 2 description. Parameter 2 description. Parameter 2 description. Parameter 2 description. Parameter 2 description. "
+                }
+              }
+            }
+          }
+        },
+        {
+          "type": "function",
+          "function": {
+            "name": "tool_7",
+            "description": "This is tool number 7. This is tool number 7. This is tool number 7. This is tool number 7. This is tool number 7. This is tool number 7. This is tool number 7. This is tool number 7. This is tool number 7. This is tool number 7. This is tool number 7. This is tool number 7. This is tool number 7. This is tool number 7. This is tool number 7. This is tool number 7. This is tool number 7. This is tool number 7. This is tool number 7. This is tool number 7. This is tool number 7. This is tool number 7. This is tool number 7. This is tool number 7. This is tool number 7. This is tool number 7. This is tool number 7. This is tool number 7. This is tool number 7. This is tool number 7. This is tool number 7. This is tool number 7. This is tool number 7. This is tool number 7. This is tool number 7. This is tool number 7. This is tool number 7. This is tool number 7. This is tool number 7. This is tool number 7. This is tool number 7. This is tool number 7. This is tool number 7. This is tool number 7. This is tool number 7. This is tool number 7. This is tool number 7. This is tool number 7. This is tool number 7. This is tool number 7. ",
+            "parameters": {
+              "type": "object",
+              "properties": {
+                "param1": {
+                  "type": "string",
+                  "description": "Parameter 1 description. Parameter 1 description. Parameter 1 description. Parameter 1 description. Parameter 1 description. Parameter 1 description. Parameter 1 description. Parameter 1 description. Parameter 1 description. Parameter 1 description. Parameter 1 description. Parameter 1 description. Parameter 1 description. Parameter 1 description. Parameter 1 description. Parameter 1 description. Parameter 1 description. Parameter 1 description. Parameter 1 description. Parameter 1 description. "
+                },
+                "param2": {
+                  "type": "number",
+                  "description": "Parameter 2 description. Parameter 2 description. Parameter 2 description. Parameter 2 description. Parameter 2 description. Parameter 2 description. Parameter 2 description. Parameter 2 description. Parameter 2 description. Parameter 2 description. Parameter 2 description. Parameter 2 description. Parameter 2 description. Parameter 2 description. Parameter 2 description. Parameter 2 description. Parameter 2 description. Parameter 2 description. Parameter 2 description. Parameter 2 description. "
+                }
+              }
+            }
+          }
+        },
+        {
+          "type": "function",
+          "function": {
+            "name": "tool_8",
+            "description": "This is tool number 8. This is tool number 8. This is tool number 8. This is tool number 8. This is tool number 8. This is tool number 8. This is tool number 8. This is tool number 8. This is tool number 8. This is tool number 8. This is tool number 8. This is tool number 8. This is tool number 8. This is tool number 8. This is tool number 8. This is tool number 8. This is tool number 8. This is tool number 8. This is tool number 8. This is tool number 8. This is tool number 8. This is tool number 8. This is tool number 8. This is tool number 8. This is tool number 8. This is tool number 8. This is tool number 8. This is tool number 8. This is tool number 8. This is tool number 8. This is tool number 8. This is tool number 8. This is tool number 8. This is tool number 8. This is tool number 8. This is tool number 8. This is tool number 8. This is tool number 8. This is tool number 8. This is tool number 8. This is tool number 8. This is tool number 8. This is tool number 8. This is tool number 8. This is tool number 8. This is tool number 8. This is tool number 8. This is tool number 8. This is tool number 8. This is tool number 8. ",
+            "parameters": {
+              "type": "object",
+              "properties": {
+                "param1": {
+                  "type": "string",
+                  "description": "Parameter 1 description. Parameter 1 description. Parameter 1 description. Parameter 1 description. Parameter 1 description. Parameter 1 description. Parameter 1 description. Parameter 1 description. Parameter 1 description. Parameter 1 description. Parameter 1 description. Parameter 1 description. Parameter 1 description. Parameter 1 description. Parameter 1 description. Parameter 1 description. Parameter 1 description. Parameter 1 description. Parameter 1 description. Parameter 1 description. "
+                },
+                "param2": {
+                  "type": "number",
+                  "description": "Parameter 2 description. Parameter 2 description. Parameter 2 description. Parameter 2 description. Parameter 2 description. Parameter 2 description. Parameter 2 description. Parameter 2 description. Parameter 2 description. Parameter 2 description. Parameter 2 description. Parameter 2 description. Parameter 2 description. Parameter 2 description. Parameter 2 description. Parameter 2 description. Parameter 2 description. Parameter 2 description. Parameter 2 description. Parameter 2 description. "
+                }
+              }
+            }
+          }
+        },
+        {
+          "type": "function",
+          "function": {
+            "name": "tool_9",
+            "description": "This is tool number 9. This is tool number 9. This is tool number 9. This is tool number 9. This is tool number 9. This is tool number 9. This is tool number 9. This is tool number 9. This is tool number 9. This is tool number 9. This is tool number 9. This is tool number 9. This is tool number 9. This is tool number 9. This is tool number 9. This is tool number 9. This is tool number 9. This is tool number 9. This is tool number 9. This is tool number 9. This is tool number 9. This is tool number 9. This is tool number 9. This is tool number 9. This is tool number 9. This is tool number 9. This is tool number 9. This is tool number 9. This is tool number 9. This is tool number 9. This is tool number 9. This is tool number 9. This is tool number 9. This is tool number 9. This is tool number 9. This is tool number 9. This is tool number 9. This is tool number 9. This is tool number 9. This is tool number 9. This is tool number 9. This is tool number 9. This is tool number 9. This is tool number 9. This is tool number 9. This is tool number 9. This is tool number 9. This is tool number 9. This is tool number 9. This is tool number 9. ",
+            "parameters": {
+              "type": "object",
+              "properties": {
+                "param1": {
+                  "type": "string",
+                  "description": "Parameter 1 description. Parameter 1 description. Parameter 1 description. Parameter 1 description. Parameter 1 description. Parameter 1 description. Parameter 1 description. Parameter 1 description. Parameter 1 description. Parameter 1 description. Parameter 1 description. Parameter 1 description. Parameter 1 description. Parameter 1 description. Parameter 1 description. Parameter 1 description. Parameter 1 description. Parameter 1 description. Parameter 1 description. Parameter 1 description. "
+                },
+                "param2": {
+                  "type": "number",
+                  "description": "Parameter 2 description. Parameter 2 description. Parameter 2 description. Parameter 2 description. Parameter 2 description. Parameter 2 description. Parameter 2 description. Parameter 2 description. Parameter 2 description. Parameter 2 description. Parameter 2 description. Parameter 2 description. Parameter 2 description. Parameter 2 description. Parameter 2 description. Parameter 2 description. Parameter 2 description. Parameter 2 description. Parameter 2 description. Parameter 2 description. "
+                }
+              }
+            }
+          }
+        }
+      ],
+      "stream": true
+    }
+  },
+  "response": {
+    "content": "您好！我看到您说\"那再试试吧\"，但我没有之前的对话上下文，不太清楚您想重新尝试什么任务。\n\n能否请您告诉我：\n1. 您想要完成什么任务？\n2. 之前遇到了什么问题？\n\n这样我可以更好地帮助您！",
+    "reasoning": "",
+    "tool_calls": [],
+    "usage": {
+      "prompt_tokens": 6510,
+      "completion_tokens": 228,
+      "total_tokens": 6738,
+      "completion_tokens_details": {
+        "reasoning_tokens": 168,
+        "text_tokens": 228
+      },
+      "prompt_tokens_details": {
+        "text_tokens": 6510
+      }
+    },
+    "finish_reason": "stop",
+    "duration": 5.653515,
+    "error": null
+  }
+}

@@ -1,5 +1,22 @@
 # 模型日志查看器 变更日志
 
+## v1.3.0 (2026-04-10)
+
+### 修复问题
+- **阿里云代理 Token 计数**：修复了阿里云 DashScope 代理（8890 端口）Token 计数显示为 0 的问题
+  - 根因：代理重启后未正确加载 API 密钥，导致请求失败无法获取 usage 信息
+  - 修复：重启代理后正确从 openclaw.json 加载 API 密钥并转发到上游
+  - 验证：现在阿里云代理和本地 vLLM 代理都能正确记录 Token 使用情况
+
+### 技术细节
+- DashScope API 在流式响应的最后一个 chunk 返回 usage，格式为：
+  ```json
+  {"choices":[],"usage":{"prompt_tokens":11,"completion_tokens":359,"total_tokens":370}}
+  ```
+- `parse_sse_stream` 已正确处理此格式
+
+---
+
 ## v1.2.0 (2026-04-09)
 
 ### 新增功能

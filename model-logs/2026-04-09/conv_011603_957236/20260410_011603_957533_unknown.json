@@ -1,0 +1,23 @@
+{
+  "timestamp": "2026-04-10T01:16:03.957571",
+  "client_ip": "127.0.0.1",
+  "client": "unknown",
+  "user_id": "unknown",
+  "conversation_id": "conv_011603_957236",
+  "endpoint": "v1/models",
+  "model": "",
+  "is_stream": false,
+  "request": {
+    "model": "unknown",
+    "messages": [],
+    "parameters": {}
+  },
+  "response": {
+    "content": "",
+    "reasoning": "",
+    "tool_calls": [],
+    "usage": {},
+    "finish_reason": "",
+    "duration": 0.179528
+  }
+}

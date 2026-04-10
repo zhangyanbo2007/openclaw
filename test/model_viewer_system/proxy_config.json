@@ -15,7 +15,7 @@
 
   "default_model": "qwen3.5-27b",
 
-  "logs_dir": "/home/zhangyanbo/.openclaw/model-logs",
+  "logs_dir": "/code/project/deploy_model/logs",
 
   "session": {
     "time_window_seconds": 60,

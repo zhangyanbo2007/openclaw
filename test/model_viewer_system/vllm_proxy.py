@@ -235,7 +235,6 @@ class ConversationLogger:
         if is_stream:
             content = response_data.get("content", "")
             reasoning = response_data.get("reasoning", "")
-            tool_calls = response_data.get("tool_calls", [])
             usage = response_data.get("usage", {})
             finish_reason = response_data.get("finish_reason", "")
         else:
@@ -243,7 +242,6 @@ class ConversationLogger:
             message = choice.get("message", {})
             content = message.get("content", "")
             reasoning = message.get("reasoning", "")
-            tool_calls = message.get("tool_calls") or choice.get("tool_calls", [])
             usage = response_data.get("usage", {})
             finish_reason = choice.get("finish_reason", "")
 
@@ -264,7 +262,7 @@ class ConversationLogger:
             "response": {
                 "content": content,
                 "reasoning": reasoning,
-                "tool_calls": tool_calls,
+                "tool_calls": [],
                 "usage": usage,
                 "finish_reason": finish_reason
             }

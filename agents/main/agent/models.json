@@ -89,7 +89,7 @@
       "models": [
         {
           "id": "qwen3.5-plus",
-          "name": "Qwen3.5-Plus (阿里云)",
+          "name": "Qwen3.5-Plus",
           "reasoning": true,
           "input": [
             "text",
@@ -113,7 +113,7 @@
       "models": [
         {
           "id": "kimi-k2.5",
-          "name": "Kimi K2.5 (Moonshot)",
+          "name": "Kimi K2.5",
           "api": "openai-completions",
           "reasoning": true,
           "input": [
@@ -266,7 +266,7 @@
       "models": [
         {
           "id": "qwen3.5-27b",
-          "name": "Qwen3.5-27B",
+          "name": "Qwen3.5-27B (8888)",
           "api": "openai-completions",
           "reasoning": false,
           "input": [
@@ -290,7 +290,7 @@
       "models": [
         {
           "id": "gemma-4-31b-it",
-          "name": "Gemma 4 31B IT",
+          "name": "Gemma 4 31B IT (8889)",
           "api": "openai-completions",
           "reasoning": false,
           "input": [
@@ -314,7 +314,7 @@
       "models": [
         {
           "id": "qwen3.5-plus",
-          "name": "Qwen3.5-Plus (阿里云)",
+          "name": "Qwen3.5-Plus (8890)",
           "api": "openai-completions",
           "reasoning": false,
           "input": [
@@ -328,6 +328,117 @@
           },
           "contextWindow": 200000,
           "maxTokens": 8192
+        }
+      ]
+    },
+    "minimax-cn": {
+      "baseUrl": "https://api.minimaxi.com/anthropic",
+      "api": "anthropic-messages",
+      "authHeader": true,
+      "models": [
+        {
+          "id": "MiniMax-M2.5",
+          "name": "MiniMax M2.5",
+          "api": "anthropic-messages",
+          "reasoning": true,
+          "input": [
+            "text"
+          ],
+          "cost": {
+            "input": 0.3,
+            "output": 1.2,
+            "cacheRead": 0.03,
+            "cacheWrite": 0.12
+          },
+          "contextWindow": 200000,
+          "maxTokens": 8192
+        }
+      ],
+      "apiKey": "sk-api-fF5lccfBWx7BZwQLH50QIPk83MLkA4UA7IKYqZOYZaf_e4fyx9LidMxWxhQS3B_8Q8-H5I32_GHgqvlSwoK4J3v23gwj5vkS6TetHZ0JfN9ZOXOD6KM6juk"
+    },
+    "arcee": {
+      "baseUrl": "https://openrouter.ai/api/v1",
+      "api": "openai-completions",
+      "models": [
+        {
+          "id": "arcee/trinity-mini",
+          "name": "Trinity Mini 26B",
+          "api": "openai-completions",
+          "reasoning": false,
+          "input": [
+            "text"
+          ],
+          "cost": {
+            "input": 0.045,
+            "output": 0.15,
+            "cacheRead": 0.045,
+            "cacheWrite": 0.045
+          },
+          "contextWindow": 131072,
+          "maxTokens": 80000
+        },
+        {
+          "id": "arcee/trinity-large-preview",
+          "name": "Trinity Large Preview",
+          "api": "openai-completions",
+          "reasoning": false,
+          "input": [
+            "text"
+          ],
+          "cost": {
+            "input": 0.25,
+            "output": 1,
+            "cacheRead": 0.25,
+            "cacheWrite": 0.25
+          },
+          "contextWindow": 131072,
+          "maxTokens": 16384
+        },
+        {
+          "id": "arcee/trinity-large-thinking",
+          "name": "Trinity Large Thinking",
+          "api": "openai-completions",
+          "reasoning": true,
+          "input": [
+            "text"
+          ],
+          "cost": {
+            "input": 0.25,
+            "output": 0.9,
+            "cacheRead": 0.25,
+            "cacheWrite": 0.25
+          },
+          "contextWindow": 262144,
+          "maxTokens": 80000,
+          "compat": {
+            "supportsReasoningEffort": false
+          }
+        }
+      ],
+      "apiKey": "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"
+    },
+    "vllm-5555": {
+      "baseUrl": "http://192.168.68.120:5555/v1",
+      "apiKey": "not-needed",
+      "api": "openai-completions",
+      "models": [
+        {
+          "id": "qwen3.5-27b",
+          "name": "Qwen3.5-27B",
+          "api": "openai-completions",
+          "reasoning": true,
+          "input": [
+            "text",
+            "image"
+          ],
+          "cost": {
+            "input": 0,
+            "output": 0,
+            "cacheRead": 0,
+            "cacheWrite": 0
+          },
+          "contextWindow": 65536,
+          "maxTokens": 32768
         }
       ]
     }

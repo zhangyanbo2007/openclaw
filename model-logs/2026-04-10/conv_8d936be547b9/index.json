@@ -1,0 +1,25 @@
+{
+  "conversation_id": "conv_8d936be547b9",
+  "user_id": "unknown",
+  "client": "unknown",
+  "first_message": {
+    "role": "user",
+    "content": [
+      {
+        "type": "text",
+        "text": "你好"
+      }
+    ]
+  },
+  "started_at": "2026-04-10T09:26:54.055624",
+  "requests": [
+    {
+      "timestamp": "2026-04-10T09:26:54.055624",
+      "model": "qwen3.5-plus",
+      "tokens": 461,
+      "user_id": "unknown"
+    }
+  ],
+  "last_updated": "2026-04-10T09:26:54.055624",
+  "request_count": 1
+}

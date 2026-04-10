@@ -1,0 +1,36 @@
+{
+  "version": 1,
+  "lastGood": {
+    "custom-dashscope-aliyuncs-com": "custom-dashscope-aliyuncs-com:default",
+    "minimax": "minimax:cn"
+  },
+  "usageStats": {
+    "openrouter:default": {
+      "errorCount": 0,
+      "lastUsed": 1774271418195
+    },
+    "moonshot:default": {
+      "errorCount": 0,
+      "lastUsed": 1773995769951
+    },
+    "custom-dashscope-aliyuncs-com:default": {
+      "errorCount": 0,
+      "lastUsed": 1775784695626,
+      "lastFailureAt": 1774507553236
+    },
+    "minimax:cn": {
+      "errorCount": 0,
+      "lastUsed": 1775162106854
+    },
+    "zai:default": {
+      "errorCount": 1,
+      "failureCounts": {
+        "rate_limit": 1
+      },
+      "lastFailureAt": 1775162095829,
+      "cooldownUntil": 1775162125829,
+      "cooldownReason": "rate_limit",
+      "cooldownModel": "glm-5"
+    }
+  }
+}

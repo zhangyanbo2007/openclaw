@@ -194,7 +194,14 @@ class ConversationLogger:
 
     def parse_sse_stream(self, sse_text: str) -> dict:
         """解析 SSE 流，提取完整的响应内容"""
-        result = {"content": "", "reasoning": "", "usage": {}, "finish_reason": None, "error": None}
+        result = {
+            "content": "",
+            "reasoning": "",
+            "tool_calls": [],
+            "usage": {},
+            "finish_reason": None,
+            "error": None
+        }
         lines = sse_text.split("\n")
 
         for line in lines:
@@ -232,6 +239,21 @@ class ConversationLogger:
                         result["reasoning"] += delta["reasoning"]
                     elif delta.get("thinking"):
                         result["reasoning"] += delta["thinking"]
+
+                    # 累积 tool_calls（流式响应中每个 chunk 可能包含一个工具调用片段）
+                    if delta.get("tool_calls"):
+                        for tc in delta["tool_calls"]:
+                            # 检查是否是新的工具调用（有 index 和 id）
+                            if "index" in tc and tc["index"] >= len(result["tool_calls"]):
+                                result["tool_calls"].append(tc)
+                            elif "index" in tc and tc["index"] < len(result["tool_calls"]):
+                                # 累积已存在工具调用的参数
+                                existing = result["tool_calls"][tc["index"]]
+                                if "function" in tc["function"]:
+                                    if "name" in tc["function"]:
+                                        existing["function"]["name"] = tc["function"]["name"]
+                                    if "arguments" in tc["function"]:
+                                        existing["function"]["arguments"] += tc["function"]["arguments"]
 
                     # 检查 finish_reason
                     if choice.get("finish_reason"):

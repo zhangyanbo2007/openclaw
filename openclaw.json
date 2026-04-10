@@ -152,6 +152,27 @@
           }
         ]
       },
+      "dashscope-wanx": {
+        "baseUrl": "https://dashscope.aliyuncs.com/api/v1/services/aigc",
+        "apiKey": "sk-a2675c4123764e46880426a87bff42de",
+        "api": "openai-completions",
+        "models": [
+          {
+            "id": "wanx-video-v1",
+            "name": "通义万相视频生成",
+            "type": "video",
+            "input": ["text", "image"],
+            "cost": {
+              "input": 0,
+              "output": 0,
+              "cacheRead": 0,
+              "cacheWrite": 0
+            },
+            "contextWindow": 4096,
+            "maxTokens": 1024
+          }
+        ]
+      },
       "minimax": {
         "baseUrl": "https://api.minimaxi.com/anthropic",
         "api": "anthropic-messages",

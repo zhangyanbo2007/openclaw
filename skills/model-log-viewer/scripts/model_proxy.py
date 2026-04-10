@@ -243,17 +243,32 @@ class ConversationLogger:
                     # 累积 tool_calls（流式响应中每个 chunk 可能包含一个工具调用片段）
                     if delta.get("tool_calls"):
                         for tc in delta["tool_calls"]:
-                            # 检查是否是新的工具调用（有 index 和 id）
-                            if "index" in tc and tc["index"] >= len(result["tool_calls"]):
-                                result["tool_calls"].append(tc)
-                            elif "index" in tc and tc["index"] < len(result["tool_calls"]):
-                                # 累积已存在工具调用的参数
-                                existing = result["tool_calls"][tc["index"]]
-                                if "function" in tc["function"]:
-                                    if "name" in tc["function"]:
-                                        existing["function"]["name"] = tc["function"]["name"]
-                                    if "arguments" in tc["function"]:
-                                        existing["function"]["arguments"] += tc["function"]["arguments"]
+                            index = tc.get("index", 0)
+                            # 如果是新的 tool_call，创建新条目
+                            if index >= len(result["tool_calls"]):
+                                # 创建新的工具调用条目，初始化 arguments 为空字符串
+                                new_tc = {
+                                    "index": index,
+                                    "id": tc.get("id", ""),
+                                    "type": tc.get("type", "function"),
+                                    "function": {
+                                        "name": tc.get("function", {}).get("name", ""),
+                                        "arguments": ""
+                                    }
+                                }
+                                result["tool_calls"].append(new_tc)
+
+                            # 累积参数到已存在的条目
+                            if index < len(result["tool_calls"]):
+                                existing = result["tool_calls"][index]
+                                # 累积 name（如果有）
+                                tc_name = tc.get("function", {}).get("name", "")
+                                if tc_name:
+                                    existing["function"]["name"] = tc_name
+                                # 累积 arguments（如果有）
+                                tc_args = tc.get("function", {}).get("arguments", "")
+                                if tc_args:
+                                    existing["function"]["arguments"] += tc_args
 
                     # 检查 finish_reason
                     if choice.get("finish_reason"):

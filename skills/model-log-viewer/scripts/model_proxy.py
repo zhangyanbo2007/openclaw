@@ -13,11 +13,11 @@ from pathlib import Path
 from aiohttp import web
 import argparse
 from difflib import SequenceMatcher
-from typing import Dict, Optional
+from typing import Dict, Optional, Tuple
 
 
 class ConversationLogger:
-    def __init__(self, base_dir: str = None):
+    def __init__(self, base_dir: str = None, config_file: str = None):
         if base_dir is None:
             # 默认使用用户家目录下的路径
             base_dir = str(Path.home() / ".openclaw" / "model-logs")
@@ -32,12 +32,59 @@ class ConversationLogger:
         self.today_dir = self.base_dir / datetime.now().strftime("%Y-%m-%d")
         self.today_dir.mkdir(exist_ok=True)
 
-        # 会话关联参数
-        self.time_window_seconds = 60  # 60 秒内的请求可能属于同一对话
-        self.similarity_threshold = 0.8  # system prompt 相似度阈值
+        # 加载配置文件
+        self.config = self.load_config(config_file)
+
+        # 会话关联参数（从配置文件读取）
+        self.time_window_seconds = self.config.get("session", {}).get("time_window_seconds", 60)
+        self.similarity_threshold = self.config.get("session", {}).get("similarity_threshold", 0.8)
+
+        # 代理配置（从配置文件读取）
+        self.agents_config = self.config.get("agents", {})
+        # 默认使用 OpenClaw 配置
+        self.agent_config = self.agents_config.get("openclaw", {
+            "user_id_patterns": ["ou_[a-z0-9]+"],
+            "group_id_patterns": ["oc_[a-z0-9]+"],
+            "chat_type_field": "chat_type",
+            "user_id_field": "sender_id",
+            "group_id_field": "chat_id"
+        })
+
+        # 加载 OpenClaw bindings 配置（用于智能体识别）
+        self.bindings = self.load_bindings()
 
         # 内存中的会话缓存 {conversation_id: conversation_data}
         self.active_conversations = {}
+
+    def load_bindings(self) -> list:
+        """加载 openclaw.json 中的 bindings 配置"""
+        openclaw_config_path = Path.home() / ".openclaw" / "openclaw.json"
+        if openclaw_config_path.exists():
+            try:
+                with open(openclaw_config_path, "r", encoding="utf-8") as f:
+                    data = json.load(f)
+                    return data.get("bindings", [])
+            except Exception as e:
+                print(f"Warning: Failed to load bindings from openclaw.json: {e}")
+        return []
+
+    def get_agent_id_from_account(self, channel: str, account_id: str) -> str:
+        """根据 channel 和 account_id 查找对应的 agentId"""
+        for binding in self.bindings:
+            if binding.get("match", {}).get("channel") == channel and \
+               binding.get("match", {}).get("accountId") == account_id:
+                return binding.get("agentId", "unknown")
+        return account_id  # 如果没有匹配，返回 account_id 本身
+
+    def load_config(self, config_file: str) -> dict:
+        """加载配置文件"""
+        if config_file and Path(config_file).exists():
+            try:
+                with open(config_file, "r", encoding="utf-8") as f:
+                    return json.load(f)
+            except Exception as e:
+                print(f"Warning: Failed to load config from {config_file}: {e}")
+        return {}
 
     def calculate_similarity(self, a: str, b: str) -> float:
         """计算两个字符串的相似度"""
@@ -55,8 +102,11 @@ class ConversationLogger:
         return ""
 
     def get_user_id(self, messages: list) -> str:
-        """从消息中提取用户 ID (ou_xxx 格式)"""
+        """从消息中提取用户 ID (ou_xxx 或 openclaw-control-ui)"""
         import re
+        # 支持多个 pattern
+        user_patterns = self.agent_config.get("user_id_patterns", ["ou_[a-z0-9]+"])
+
         for msg in messages:
             if isinstance(msg, dict):
                 content = msg.get('content', '')
@@ -65,25 +115,223 @@ class ConversationLogger:
                     for item in content:
                         if isinstance(item, dict) and 'text' in item:
                             text_content = item.get('text', '')
-                            # 优先匹配 sender_id 或 id 字段中的 ou_xxx
-                            match = re.search(r'(?:sender_id|sender|id|label)"?:\s*"?(ou_[a-z0-9]+)"?', text_content)
-                            if match:
-                                return match.group(1)
-                            # 备用：匹配任何 ou_xxx
-                            match = re.search(r'ou_[a-z0-9]+', text_content)
-                            if match:
-                                return match.group()
+                            # 使用配置的 patterns 逐一匹配
+                            for pattern in user_patterns:
+                                match = re.search(pattern, text_content)
+                                if match:
+                                    return match.group()
                 # 处理 content 是字符串的情况
                 elif isinstance(content, str):
-                    # 优先匹配 sender_id 或 id 字段中的 ou_xxx
-                    match = re.search(r'(?:sender_id|sender|id|label)"?:\s*"?(ou_[a-z0-9]+)"?', content)
-                    if match:
-                        return match.group(1)
-                    # 备用：匹配任何 ou_xxx
+                    for pattern in user_patterns:
+                        match = re.search(pattern, content)
+                        if match:
+                            return match.group()
+        return "unknown"
+
+    def get_chat_type_and_id(self, messages: list) -> Tuple[str, str]:
+        """
+        检测聊天类型和对应的 ID
+        返回：(chat_type, chat_id)
+        - chat_type: "direct" 或 "group"
+        - chat_id: 用户 ID 或 群聊 ID
+
+        使用配置文件中的正则表达式和字段名
+        """
+        import re
+        # 支持多个 patterns
+        user_patterns = self.agent_config.get("user_id_patterns", ["ou_[a-z0-9]+"])
+        group_patterns = self.agent_config.get("group_id_patterns", ["oc_[a-z0-9]+"])
+        user_field = self.agent_config.get("user_id_field", "sender_id")
+        group_field = self.agent_config.get("group_id_field", "chat_id")
+
+        # 第一遍：使用字段名匹配
+        for msg in messages:
+            if isinstance(msg, dict):
+                content = msg.get('content', '')
+                if isinstance(content, list):
+                    for item in content:
+                        if isinstance(item, dict) and 'text' in item:
+                            text_content = item.get('text', '')
+                            # 检测群聊 ID
+                            for group_pattern in group_patterns:
+                                group_regex = rf'(?:{group_field}|group_id|conversation_id)"?:\s*"?({group_pattern})"?'
+                                match = re.search(group_regex, text_content)
+                                if match:
+                                    return ("group", match.group(1))
+                            # 检测用户 ID
+                            for user_pattern in user_patterns:
+                                user_regex = rf'(?:{user_field}|sender|id)"?:\s*"?({user_pattern})"?'
+                                match = re.search(user_regex, text_content)
+                                if match:
+                                    return ("direct", match.group(1))
+                elif isinstance(content, str):
+                    # 检测群聊 ID
+                    for group_pattern in group_patterns:
+                        group_regex = rf'(?:{group_field}|group_id|conversation_id)"?:\s*"?({group_pattern})"?'
+                        match = re.search(group_regex, content)
+                        if match:
+                            return ("group", match.group(1))
+                    # 检测用户 ID
+                    for user_pattern in user_patterns:
+                        user_regex = rf'(?:{user_field}|sender|id)"?:\s*"?({user_pattern})"?'
+                        match = re.search(user_regex, content)
+                        if match:
+                            return ("direct", match.group(1))
+
+        # 第二遍：备用逻辑，直接匹配任何配置的 pattern（从 /new 消息文本中提取）
+        for msg in messages:
+            if isinstance(msg, dict):
+                content = msg.get('content', '')
+                if isinstance(content, list):
+                    for item in content:
+                        if isinstance(item, dict) and 'text' in item:
+                            text_content = item.get('text', '')
+                            # 先检测群聊 ID
+                            for group_pattern in group_patterns:
+                                match = re.search(group_pattern, text_content)
+                                if match:
+                                    return ("group", match.group())
+                            # 再检测用户 ID
+                            for user_pattern in user_patterns:
+                                match = re.search(user_pattern, text_content)
+                                if match:
+                                    return ("direct", match.group())
+                elif isinstance(content, str):
+                    # 先检测群聊 ID
+                    for group_pattern in group_patterns:
+                        match = re.search(group_pattern, content)
+                        if match:
+                            return ("group", match.group())
+                    # 再检测用户 ID
+                    for user_pattern in user_patterns:
+                        match = re.search(user_pattern, content)
+                        if match:
+                            return ("direct", match.group())
+
+        return ("direct", "unknown")
+
+    def get_agent_info(self, messages: list) -> Tuple[str, str, str]:
+        """
+        从消息中提取 agent 相关信息
+        返回：(channel, account_id, agent_id)
+        优先级：1. accountId 字段 > 2. label 推断 > 3. 默认 main
+        """
+        import re
+        channel = "unknown"
+        account_id = "unknown"
+        agent_id = "unknown"
+
+        for msg in messages:
+            if isinstance(msg, dict):
+                content = msg.get('content', '')
+                if isinstance(content, list):
+                    for item in content:
+                        if isinstance(item, dict) and 'text' in item:
+                            text_content = item.get('text', '')
+                            # 查找 Sender metadata 块
+                            sender_match = re.search(
+                                r'Sender \(untrusted metadata\):\s*```json\s*\{([^}]+)\}',
+                                text_content, re.DOTALL
+                            )
+                            if sender_match:
+                                sender_json = sender_match.group(1)
+                                # 提取 label
+                                label_match = re.search(r'"label"\s*:\s*"([^"]+)"', sender_json)
+                                # 提取 id
+                                id_match = re.search(r'"id"\s*:\s*"([^"]+)"', sender_json)
+                                # 提取 accountId（新增字段）
+                                account_match = re.search(r'"accountId"\s*:\s*"([^"]+)"', sender_json)
+
+                                label = label_match.group(1) if label_match else "unknown"
+                                id_val = id_match.group(1) if id_match else "unknown"
+                                account_id_val = account_match.group(1) if account_match else None
+
+                                # 优先使用 accountId 字段
+                                if account_id_val:
+                                    account_id = account_id_val
+                                    # 根据 label 确定 channel
+                                    if label == "openclaw-control-ui":
+                                        channel = "control-ui"
+                                    elif label.startswith("feishu-"):
+                                        channel = "feishu"
+                                    else:
+                                        channel = label
+                                    # 通过 bindings 查找 agentId
+                                    agent_id = self.get_agent_id_from_account(channel, account_id)
+                                    return (channel, account_id, agent_id)
+
+                                # 没有 accountId 字段时，使用原有逻辑
+                                if label == "openclaw-control-ui":
+                                    channel = "control-ui"
+                                    account_id = id_val
+                                    agent_id = "main"  # openclaw-control-ui 默认对应 main agent
+                                elif label.startswith("feishu-"):
+                                    channel = "feishu"
+                                    account_id = label
+                                    agent_id = self.get_agent_id_from_account(channel, account_id)
+                                else:
+                                    channel = label
+                                    account_id = id_val
+                                    agent_id = self.get_agent_id_from_account(channel, account_id)
+                                return (channel, account_id, agent_id)
+                elif isinstance(content, str):
+                    sender_match = re.search(
+                        r'Sender \(untrusted metadata\):\s*```json\s*\{([^}]+)\}',
+                        content, re.DOTALL
+                    )
+                    if sender_match:
+                        sender_json = sender_match.group(1)
+                        label_match = re.search(r'"label"\s*:\s*"([^"]+)"', sender_json)
+                        id_match = re.search(r'"id"\s*:\s*"([^"]+)"', sender_json)
+                        account_match = re.search(r'"accountId"\s*:\s*"([^"]+)"', sender_json)
+
+                        label = label_match.group(1) if label_match else "unknown"
+                        id_val = id_match.group(1) if id_match else "unknown"
+                        account_id_val = account_match.group(1) if account_match else None
+
+                        if account_id_val:
+                            account_id = account_id_val
+                            if label == "openclaw-control-ui":
+                                channel = "control-ui"
+                            elif label.startswith("feishu-"):
+                                channel = "feishu"
+                            else:
+                                channel = label
+                            agent_id = self.get_agent_id_from_account(channel, account_id)
+                            return (channel, account_id, agent_id)
+
+                        if label == "openclaw-control-ui":
+                            channel = "control-ui"
+                            account_id = id_val
+                            agent_id = "main"
+                        elif label.startswith("feishu-"):
+                            channel = "feishu"
+                            account_id = label
+                            agent_id = self.get_agent_id_from_account(channel, account_id)
+                        else:
+                            channel = label
+                            account_id = id_val
+                            agent_id = self.get_agent_id_from_account(channel, account_id)
+                        return (channel, account_id, agent_id)
+
+        # 没有 Sender metadata 时，尝试从 USER.md 等内容中提取 feishu open_id
+        for msg in messages:
+            if isinstance(msg, dict):
+                content = msg.get('content', '')
+                if isinstance(content, str) and 'ou_' in content:
                     match = re.search(r'ou_[a-z0-9]+', content)
                     if match:
-                        return match.group()
-        return "unknown"
+                        return ("feishu", match.group(), "main")
+                elif isinstance(content, list):
+                    for item in content:
+                        if isinstance(item, dict) and 'text' in item:
+                            text_content = item.get('text', '')
+                            if 'ou_' in text_content:
+                                match = re.search(r'ou_[a-z0-9]+', text_content)
+                                if match:
+                                    return ("feishu", match.group(), "main")
+
+        return ("unknown", "unknown", "unknown")
 
     def is_new_session(self, messages: list) -> bool:
         """检查是否是新的会话（通过 /new 或 /reset 标记）"""
@@ -136,41 +384,128 @@ class ConversationLogger:
 
         return None
 
+    def is_new_session_marker(self, messages: list) -> bool:
+        """
+        检测消息中是否包含新会话标记（/new 或 /reset）
+        检测逻辑：最后一条 user 消息是否包含配置的标记字符串
+        """
+        # 获取配置的标记列表
+        markers = self.agent_config.get("new_session_markers", [])
+        if not markers:
+            return False
+
+        # 找到最后一条 user 消息
+        for msg in reversed(messages):
+            if isinstance(msg, dict) and msg.get('role') == 'user':
+                content = msg.get('content', '')
+                # 处理 content 是列表的情况（多模态消息）
+                if isinstance(content, list):
+                    for item in content:
+                        if isinstance(item, dict) and 'text' in item:
+                            text_content = item.get('text', '')
+                            for marker in markers:
+                                if marker in text_content:
+                                    return True
+                # 处理 content 是字符串的情况
+                elif isinstance(content, str):
+                    for marker in markers:
+                        if marker in content:
+                            return True
+                # 只检查最后一条 user 消息
+                break
+
+        return False
+
     def get_conversation_id(self, client_ip: str, messages: list, headers: dict) -> str:
         """
         生成或查找会话 ID
-        优先级：1. X-Session-ID 头 > 2. 用户 ID + /new 标记 > 3. 直接关联最近会话
+        维度：agent_id > chat_type > chat_id > /new 标记
         """
         # 尝试从请求头获取会话 ID
         session_id = headers.get("x-session-id") or headers.get("x-request-id")
         if session_id:
             return f"session_{session_id}"
 
-        # 优先使用用户 ID 作为会话标识
-        user_id = self.get_user_id(messages)
-        if user_id != "unknown":
-            today = datetime.now().strftime("%Y%m%d")
-            base_conv_id = f"conv_{user_id}_{today}"
+        # 检测是否是 /new 或 /reset 触发的新会话
+        is_new_session = self.is_new_session_marker(messages)
 
-            # 检查是否是 /new 或 /reset 触发的新会话
-            is_new = self.is_new_session(messages)
+        # 获取 agent 信息（channel, account_id, agent_id）
+        channel, account_id, agent_id = self.get_agent_info(messages)
 
-            if not is_new:
-                # 不是新会话，直接关联到同一用户的最近会话（不管时间）
-                for conv_id, conv_data in list(self.active_conversations.items()):
-                    if conv_id.startswith(base_conv_id):
-                        if conv_data['client_ip'] == client_ip:
-                            return conv_id
+        # 检测聊天类型和 ID
+        chat_type, chat_id = self.get_chat_type_and_id(messages)
 
-            # 创建新的子会话（/new 标记或无匹配会话）
-            conv_id = f"{base_conv_id}_{datetime.now().strftime('%H%M%S')}"
+        # 构建基础会话 ID：包含 agent_id
+        if agent_id != "unknown":
+            # 有明确的 agent_id，按 agent 区分
+            if chat_id != "unknown":
+                # 同时有 agent 和用户/群 ID
+                if chat_type == "group":
+                    base_conv_id = f"conv_agent_{agent_id}_group_{chat_id}"
+                else:
+                    base_conv_id = f"conv_agent_{agent_id}_user_{chat_id}"
+            else:
+                # 只有 agent_id，没有用户 ID（如 control-ui  without feishu context）
+                base_conv_id = f"conv_agent_{agent_id}"
+        elif chat_id != "unknown":
+            # 没有 agent_id，但有用户/群 ID
+            if chat_type == "group":
+                base_conv_id = f"conv_group_{chat_id}"
+            else:
+                base_conv_id = f"conv_user_{chat_id}"
+        else:
+            # 都没有，使用旧逻辑（哈希）
+            base_conv_id = None
+
+        if base_conv_id:
+            # /new 或 /reset 标记：直接创建新会话（带新时间戳）
+            if is_new_session:
+                timestamp = datetime.now().strftime("%Y%m%d_%H%M%S_%f")[:19]  # 精确到毫秒
+                conv_id = f"{base_conv_id}_{timestamp}"
+                self.active_conversations[conv_id] = {
+                    "client_ip": client_ip,
+                    "agent_id": agent_id,
+                    "channel": channel,
+                    "account_id": account_id,
+                    "chat_type": chat_type,
+                    "chat_id": chat_id,
+                    "user_id": chat_id if chat_type == "direct" else "unknown",
+                    "system_prompt": self.get_system_prompt(messages),
+                    "started_at": datetime.now().isoformat(),
+                    "last_updated": datetime.now().isoformat(),
+                    "is_new_session": is_new_session
+                }
+                return conv_id
+
+            # 普通消息：查找匹配的最近会话并复用
+            matching_convs = [
+                (conv_id, conv_data)
+                for conv_id, conv_data in self.active_conversations.items()
+                if conv_id.startswith(base_conv_id + "_")
+            ]
+            if matching_convs:
+                # 按 started_at 排序，取最新的
+                matching_convs.sort(key=lambda x: x[1].get("started_at", ""), reverse=True)
+                latest_conv_id = matching_convs[0][0]
+                # 更新 last_updated
+                self.active_conversations[latest_conv_id]["last_updated"] = datetime.now().isoformat()
+                return latest_conv_id
+
+            # 没有已有会话时，创建带时间戳的初始会话
+            timestamp = datetime.now().strftime("%Y%m%d_%H%M%S_%f")[:19]
+            conv_id = f"{base_conv_id}_{timestamp}"
             self.active_conversations[conv_id] = {
                 "client_ip": client_ip,
-                "user_id": user_id,
+                "agent_id": agent_id,
+                "channel": channel,
+                "account_id": account_id,
+                "chat_type": chat_type,
+                "chat_id": chat_id,
+                "user_id": chat_id if chat_type == "direct" else "unknown",
                 "system_prompt": self.get_system_prompt(messages),
                 "started_at": datetime.now().isoformat(),
                 "last_updated": datetime.now().isoformat(),
-                "is_new_session": is_new  # 标记是否由 /new 触发
+                "is_new_session": False
             }
             return conv_id
 
@@ -391,7 +726,7 @@ class ConversationLogger:
         return conv_id, log_file
 
 
-class VLLMProxy:
+class ModelProxy:
     def __init__(self, config: dict, port: int = None):
         self.models: Dict[str, dict] = config.get("models", {})
         self.default_model = config.get("default_model")
@@ -402,7 +737,9 @@ class VLLMProxy:
         if not self.models and config.get("model_port_mapping"):
             self._load_models_from_openclaw(config, port)
 
-        self.logger = ConversationLogger(base_dir=self.logs_dir)
+        # 传递配置文件路径给 ConversationLogger
+        config_file = config.get("_config_file", "")  # 从内部字段读取
+        self.logger = ConversationLogger(base_dir=self.logs_dir, config_file=config_file)
         self.app = web.Application()
 
         # 注册所有路由
@@ -585,7 +922,7 @@ def load_config(config_path: str) -> dict:
 
 
 def main():
-    parser = argparse.ArgumentParser(description="vLLM HTTP 代理 (支持多模型路由)")
+    parser = argparse.ArgumentParser(description="模型 HTTP 代理 (支持多模型路由)")
     parser.add_argument("--host", default="0.0.0.0", help="监听地址")
     parser.add_argument("--port", type=int, default=8888, help="监听端口")
     parser.add_argument("--config", default="proxy_config.json", help="配置文件路径")
@@ -595,8 +932,9 @@ def main():
     config = load_config(args.config)
     config["proxy_host"] = args.host
     config["proxy_port"] = args.port
+    config["_config_file"] = args.config  # 保存配置文件路径供内部使用
 
-    proxy = VLLMProxy(config, port=args.port)
+    proxy = ModelProxy(config, port=args.port)
     print(f"\n代理服务启动：http://{args.host}:{args.port}")
     print(f"日志目录：{Path(config.get('logs_dir', '/home/zhangyanbo/.openclaw/model-logs')).absolute()}\n")
     web.run_app(proxy.app, host=args.host, port=args.port)

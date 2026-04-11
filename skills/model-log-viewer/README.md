@@ -214,4 +214,130 @@ server.py: sync_to_openclaw_post()
 
 ## 版本
 
-当前版本：v1.2.0
+当前版本：v1.3.0
+
+## 附录：会话管理策略
+
+### 会话 ID 生成规则
+
+**会话维度优先级：agent_id > chat_type > chat_id > /new 标记**
+
+| 场景 | 会话 ID 格式 | 说明 |
+|------|-------------|------|
+| main agent + 飞书用户首次 | `conv_agent_main_user_ou_xxxxx_20260410_182030` | agent + 用户 ID + 时间戳 |
+| main agent + 飞书用户普通消息 | 复用最近的 `conv_agent_main_user_ou_xxxxx_*` | 按 `started_at` 排序取最新 |
+| main agent + 飞书用户 `/new` 触发 | `conv_agent_main_user_ou_xxxxx_20260410_183000` | 新时间戳的新会话 |
+| fox-feishu agent + 群聊首次 | `conv_agent_fox-feishu_group_oc_xxxxx_20260410_182030` | agent + 群 ID + 时间戳 |
+| control-ui 无用户 ID | `conv_agent_main_20260410_182030` | 仅按 agent 区分 |
+
+**说明：**
+- `agent_id` 从 `openclaw.json` 的 `bindings` 配置中查找
+- 消息中 `Sender metadata` 的 `accountId` 字段用于匹配 bindings
+- 如果没有 `accountId` 字段，`openclaw-control-ui` 默认对应 `main` agent
+- `/new` 触发新会话（新时间戳），但 ID 格式与普通消息一致
+
+### 会话复用逻辑
+
+```
+收到请求
+    │
+    ▼
+① 提取 agent 信息（channel, account_id, agent_id）
+    │  - 优先读取 Sender metadata 中的 accountId 字段
+    │  - 通过 bindings 配置查找对应的 agentId
+    │  - 无 accountId 时：openclaw-control-ui → main agent
+    │
+    ▼
+② 检测聊天类型和用户/群 ID
+    │  - 使用 user_id_patterns / group_id_patterns 匹配
+    │  - 支持多个 pattern（如 ou_xxx 和 openclaw-control-ui）
+    │
+    ▼
+③ 构建基础会话 ID
+    │  - 有 agent_id + 用户 ID：conv_agent_{agent}_user_{ou_xxx}
+    │  - 有 agent_id + 群 ID：conv_agent_{agent}_group_{oc_xxx}
+    │  - 只有 agent_id：conv_agent_{agent}
+    │
+    ▼
+④ 检测是否包含 /new 或 /reset 标记
+    │
+    ├── 包含标记
+    │     └── 创建新会话：{base}_new_{timestamp}
+    │
+    └── 无标记（普通消息）
+          │
+          ▼
+          查找匹配的会话（同 agent + 同用户/群）
+          │
+          ├── 找到匹配
+          │     └── 复用最近的会话（started_at 最新）
+          │
+          └── 无匹配
+                └── 创建新会话：{base}_{timestamp}
+```
+
+### 配置方式
+
+**1. proxy_config.json - 配置用户 ID patterns 和会话标记**
+
+```json
+{
+  "agents": {
+    "openclaw": {
+      "enabled": true,
+      "user_id_patterns": [
+        "ou_[a-z0-9]+",
+        "openclaw-control-ui"
+      ],
+      "group_id_patterns": [
+        "oc_[a-z0-9]+",
+        "openclaw-control-ui"
+      ],
+      "new_session_markers": [
+        "A new session was started via /new or /reset",
+        "/new",
+        "/reset"
+      ]
+    }
+  }
+}
+```
+
+**2. openclaw.json - 配置 bindings（智能体路由）**
+
+```json
+{
+  "bindings": [
+    {
+      "agentId": "main",
+      "match": {
+        "channel": "feishu",
+        "accountId": "main"
+      }
+    },
+    {
+      "agentId": "fox-feishu",
+      "match": {
+        "channel": "feishu",
+        "accountId": "fox-feishu"
+      }
+    }
+  ]
+}
+```
+
+**3. 消息格式 - Sender metadata**
+
+```json
+{
+  "label": "openclaw-control-ui",
+  "id": "openclaw-control-ui",
+  "accountId": "main"
+}
+```
+
+`accountId` 字段用于匹配 bindings 配置，查找对应的 `agentId`。
+
+### 版本
+
+当前版本：v1.3.0

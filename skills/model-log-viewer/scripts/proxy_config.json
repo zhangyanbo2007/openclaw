@@ -13,5 +13,40 @@
   "session": {
     "time_window_seconds": 60,
     "similarity_threshold": 0.8
+  },
+  "agents": {
+    "openclaw": {
+      "enabled": true,
+      "description": "OpenClaw 智能体 - 飞书渠道",
+      "user_id_patterns": [
+        "ou_[a-z0-9]+",
+        "openclaw-control-ui"
+      ],
+      "group_id_patterns": [
+        "oc_[a-z0-9]+",
+        "openclaw-control-ui"
+      ],
+      "chat_type_field": "chat_type",
+      "user_id_field": "sender_id",
+      "group_id_field": "chat_id",
+      "new_session_markers": [
+        "A new session was started via /new or /reset",
+        "/new",
+        "/reset"
+      ]
+    },
+    "claude_code": {
+      "enabled": false,
+      "description": "Claude Code 智能体 - 可能需要不同的识别策略",
+      "user_id_pattern": "user_[a-z0-9]+",
+      "group_id_pattern": "room_[a-z0-9]+",
+      "chat_type_field": "type",
+      "user_id_field": "user_id",
+      "group_id_field": "room_id",
+      "new_session_markers": [
+        "/new",
+        "/reset"
+      ]
+    }
   }
 }

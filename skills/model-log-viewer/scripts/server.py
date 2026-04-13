@@ -767,21 +767,45 @@ class LogViewerHandler(SimpleHTTPRequestHandler):
         openclaw_config = home / ".openclaw" / "openclaw.json"
         claude_settings = home / ".claude" / "settings.json"
 
-        # 检测逻辑：优先检查 OpenClaw，因为当前技能运行在 OpenClaw 环境下
-        # 用户可以通过环境变量或查询参数强制指定
-        if openclaw_config.exists():
+        # 检测逻辑：优先根据技能所在的母目录判断
+        # 技能路径格式：~/.openclaw/skills/model-log-viewer/scripts 或 ~/.claude/projects/.../skills/model-log-viewer/scripts
+        base_dir = BASE_DIR  # 当前脚本所在目录：skills/model-log-viewer/scripts
+        parent_dir = base_dir.parent  # skills/model-log-viewer
+        grandparent_dir = parent_dir.parent  # skills
+        great_grandparent_dir = grandparent_dir.parent  # ~/.openclaw 或 ~/.claude
+
+        if great_grandparent_dir.name == ".openclaw":
             self.send_json({
                 "success": True,
                 "agentType": "openclaw",
                 "configPath": str(openclaw_config),
-                "autoDetected": True
+                "autoDetected": True,
+                "detectionMethod": "parent_dir"
+            })
+        elif great_grandparent_dir.name == ".claude":
+            self.send_json({
+                "success": True,
+                "agentType": "claudecode",
+                "configPath": str(claude_settings),
+                "autoDetected": True,
+                "detectionMethod": "parent_dir"
+            })
+        elif openclaw_config.exists():
+            # 回退逻辑：检查配置文件
+            self.send_json({
+                "success": True,
+                "agentType": "openclaw",
+                "configPath": str(openclaw_config),
+                "autoDetected": True,
+                "detectionMethod": "config_file"
             })
         elif claude_settings.exists():
             self.send_json({
                 "success": True,
                 "agentType": "claudecode",
                 "configPath": str(claude_settings),
-                "autoDetected": True
+                "autoDetected": True,
+                "detectionMethod": "config_file"
             })
         else:
             # 默认返回 OpenClaw

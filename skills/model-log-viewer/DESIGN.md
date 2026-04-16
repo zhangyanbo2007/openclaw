@@ -174,6 +174,11 @@ model-logs/
    - 问题：启动失败时复选框保持勾选
    - 修复：所有分支调用 checkStatus() 刷新状态
 
+6. **智能体 models.json 同步**（server.py - sync_agents_models_json）
+   - 问题：只更新 openclaw.json，未更新 agents 目录下各智能体的 models.json
+   - 修复：新增 `sync_agents_models_json()` 函数，遍历 `~/.openclaw/agents/*/agent/models.json`
+   - 支持：自动删除旧的 localproxy-* providers，添加新的配置
+
 ## 配置项说明
 
 ### proxy_config.json

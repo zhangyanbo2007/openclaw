@@ -130,21 +130,17 @@ class ConversationLogger:
 
     def get_chat_type_and_id(self, messages: list) -> Tuple[str, str]:
         """
-        检测聊天类型和对应的 ID
+        检测聊天类型和对应的 ID（只从 Conversation info metadata 字段提取）
         返回：(chat_type, chat_id)
         - chat_type: "direct" 或 "group"
         - chat_id: 用户 ID 或 群聊 ID
 
-        使用配置文件中的正则表达式和字段名
+        检测逻辑：
+        1. is_group_chat: true → 群聊，使用 conversation_label 作为 ID
+        2. 否则 → 直聊，使用 sender_id 作为 ID
         """
         import re
-        # 支持多个 patterns
-        user_patterns = self.agent_config.get("user_id_patterns", ["ou_[a-z0-9]+"])
-        group_patterns = self.agent_config.get("group_id_patterns", ["oc_[a-z0-9]+"])
-        user_field = self.agent_config.get("user_id_field", "sender_id")
-        group_field = self.agent_config.get("group_id_field", "chat_id")
 
-        # 第一遍：使用字段名匹配
         for msg in messages:
             if isinstance(msg, dict):
                 content = msg.get('content', '')
@@ -152,62 +148,45 @@ class ConversationLogger:
                     for item in content:
                         if isinstance(item, dict) and 'text' in item:
                             text_content = item.get('text', '')
-                            # 检测群聊 ID
-                            for group_pattern in group_patterns:
-                                group_regex = rf'(?:{group_field}|group_id|conversation_id)"?:\s*"?({group_pattern})"?'
-                                match = re.search(group_regex, text_content)
-                                if match:
-                                    return ("group", match.group(1))
-                            # 检测用户 ID
-                            for user_pattern in user_patterns:
-                                user_regex = rf'(?:{user_field}|sender|id)"?:\s*"?({user_pattern})"?'
-                                match = re.search(user_regex, text_content)
-                                if match:
-                                    return ("direct", match.group(1))
-                elif isinstance(content, str):
-                    # 检测群聊 ID
-                    for group_pattern in group_patterns:
-                        group_regex = rf'(?:{group_field}|group_id|conversation_id)"?:\s*"?({group_pattern})"?'
-                        match = re.search(group_regex, content)
-                        if match:
-                            return ("group", match.group(1))
-                    # 检测用户 ID
-                    for user_pattern in user_patterns:
-                        user_regex = rf'(?:{user_field}|sender|id)"?:\s*"?({user_pattern})"?'
-                        match = re.search(user_regex, content)
-                        if match:
-                            return ("direct", match.group(1))
+                            # 只从 Conversation info metadata 块提取
+                            conv_match = re.search(
+                                r'Conversation info.*?:\s*```json\s*\{([^}]+)\}',
+                                text_content, re.DOTALL
+                            )
+                            if conv_match:
+                                json_str = conv_match.group(1)
+                                # 检查 is_group_chat
+                                is_group = '"is_group_chat": true' in json_str
+                                # 提取 conversation_label (群聊 ID)
+                                conv_label_match = re.search(r'"conversation_label"\s*:\s*"([^"]+)"', json_str)
+                                # 提取 sender_id (用户 ID)
+                                sender_id_match = re.search(r'"sender_id"\s*:\s*"([^"]+)"', json_str)
 
-        # 第二遍：备用逻辑，直接匹配任何配置的 pattern（从 /new 消息文本中提取）
-        for msg in messages:
-            if isinstance(msg, dict):
-                content = msg.get('content', '')
-                if isinstance(content, list):
-                    for item in content:
-                        if isinstance(item, dict) and 'text' in item:
-                            text_content = item.get('text', '')
-                            # 先检测群聊 ID
-                            for group_pattern in group_patterns:
-                                match = re.search(group_pattern, text_content)
-                                if match:
-                                    return ("group", match.group())
-                            # 再检测用户 ID
-                            for user_pattern in user_patterns:
-                                match = re.search(user_pattern, text_content)
-                                if match:
-                                    return ("direct", match.group())
+                                if is_group and conv_label_match:
+                                    return ("group", conv_label_match.group(1))
+                                elif sender_id_match:
+                                    return ("direct", sender_id_match.group(1))
                 elif isinstance(content, str):
-                    # 先检测群聊 ID
-                    for group_pattern in group_patterns:
-                        match = re.search(group_pattern, content)
-                        if match:
-                            return ("group", match.group())
-                    # 再检测用户 ID
-                    for user_pattern in user_patterns:
-                        match = re.search(user_pattern, content)
-                        if match:
-                            return ("direct", match.group())
+                    # 只从 Conversation info metadata 块提取
+                    conv_match = re.search(
+                        r'Conversation info.*?:\s*```json\s*\{([^}]+)\}',
+                        content, re.DOTALL
+                    )
+                    if conv_match:
+                        json_str = conv_match.group(1)
+                        # 检查 is_group_chat
+                        is_group = '"is_group_chat": true' in json_str
+                        # 提取 conversation_label (群聊 ID)
+                        conv_label_match = re.search(r'"conversation_label"\s*:\s*"([^"]+)"', json_str)
+                        # 提取 sender_id (用户 ID)
+                        sender_id_match = re.search(r'"sender_id"\s*:\s*"([^"]+)"', json_str)
 
+                        if is_group and conv_label_match:
+                            return ("group", conv_label_match.group(1))
+                        elif sender_id_match:
+                            return ("direct", sender_id_match.group(1))
+
+        # 未找到 Conversation info metadata，返回默认值
         return ("direct", "unknown")
 
     def get_agent_info(self, messages: list) -> Tuple[str, str, str]:
@@ -314,41 +293,8 @@ class ConversationLogger:
                             agent_id = self.get_agent_id_from_account(channel, account_id)
                         return (channel, account_id, agent_id)
 
-        # 没有 Sender metadata 时，尝试从 USER.md 等内容中提取 feishu open_id
-        for msg in messages:
-            if isinstance(msg, dict):
-                content = msg.get('content', '')
-                if isinstance(content, str) and 'ou_' in content:
-                    match = re.search(r'ou_[a-z0-9]+', content)
-                    if match:
-                        return ("feishu", match.group(), "main")
-                elif isinstance(content, list):
-                    for item in content:
-                        if isinstance(item, dict) and 'text' in item:
-                            text_content = item.get('text', '')
-                            if 'ou_' in text_content:
-                                match = re.search(r'ou_[a-z0-9]+', text_content)
-                                if match:
-                                    return ("feishu", match.group(), "main")
-
+        # 没有 Sender metadata 时，返回 unknown
         return ("unknown", "unknown", "unknown")
-
-    def is_new_session(self, messages: list) -> bool:
-        """检查是否是新的会话（通过 /new 或 /reset 标记）"""
-        for msg in messages:
-            if isinstance(msg, dict) and msg.get('role') == 'user':
-                content = msg.get('content', '')
-                # 处理 content 是列表的情况
-                if isinstance(content, list):
-                    for item in content:
-                        if isinstance(item, dict) and 'text' in item:
-                            if 'A new session was started via /new or /reset' in item.get('text', ''):
-                                return True
-                # 处理 content 是字符串的情况
-                elif isinstance(content, str):
-                    if 'A new session was started via /new or /reset' in content:
-                        return True
-        return False
 
     def find_matching_conversation(self, client_ip: str, messages: list, system_prompt: str) -> str:
         """
@@ -386,33 +332,33 @@ class ConversationLogger:
 
     def is_new_session_marker(self, messages: list) -> bool:
         """
-        检测消息中是否包含新会话标记（/new 或 /reset）
-        检测逻辑：最后一条 user 消息是否包含配置的标记字符串
+        检测是否是新会话：最后一组消息是 User，且以 [Startup context loaded by runtime] 开头
         """
-        # 获取配置的标记列表
-        markers = self.agent_config.get("new_session_markers", [])
-        if not markers:
+        if not messages:
             return False
 
-        # 找到最后一条 user 消息
-        for msg in reversed(messages):
-            if isinstance(msg, dict) and msg.get('role') == 'user':
-                content = msg.get('content', '')
-                # 处理 content 是列表的情况（多模态消息）
-                if isinstance(content, list):
-                    for item in content:
-                        if isinstance(item, dict) and 'text' in item:
-                            text_content = item.get('text', '')
-                            for marker in markers:
-                                if marker in text_content:
-                                    return True
-                # 处理 content 是字符串的情况
-                elif isinstance(content, str):
-                    for marker in markers:
-                        if marker in content:
-                            return True
-                # 只检查最后一条 user 消息
-                break
+        # 获取最后一条消息
+        last_msg = messages[-1]
+
+        # 检查是否是 User 消息
+        if not isinstance(last_msg, dict) or last_msg.get('role') != 'user':
+            return False
+
+        content = last_msg.get('content', '')
+
+        # 处理 content 是列表的情况（多模态消息）
+        if isinstance(content, list):
+            for item in content:
+                if isinstance(item, dict) and 'text' in item:
+                    text_content = item.get('text', '').lstrip()  # 使用 lstrip()
+                    # 检查是否以 [Startup context loaded by runtime] 开头
+                    if text_content.startswith('[Startup context loaded by runtime]'):
+                        return True
+        # 处理 content 是字符串的情况
+        elif isinstance(content, str):
+            # 使用 lstrip() 后检查是否以 [Startup context loaded by runtime] 开头
+            if content.lstrip().startswith('[Startup context loaded by runtime]'):
+                return True
 
         return False
 
@@ -478,11 +424,13 @@ class ConversationLogger:
                 return conv_id
 
             # 普通消息：查找匹配的最近会话并复用
+            # 优先精确匹配（base_conv_id 完全匹配）
             matching_convs = [
                 (conv_id, conv_data)
                 for conv_id, conv_data in self.active_conversations.items()
                 if conv_id.startswith(base_conv_id + "_")
             ]
+
             if matching_convs:
                 # 按 started_at 排序，取最新的
                 matching_convs.sort(key=lambda x: x[1].get("started_at", ""), reverse=True)
@@ -491,7 +439,8 @@ class ConversationLogger:
                 self.active_conversations[latest_conv_id]["last_updated"] = datetime.now().isoformat()
                 return latest_conv_id
 
-            # 没有已有会话时，创建带时间戳的初始会话
+            # 没有精确匹配时，不再按 agent_id 前缀复用（会导致不同用户的消息混到同一会话）
+            # 直接创建带时间戳的新会话
             timestamp = datetime.now().strftime("%Y%m%d_%H%M%S_%f")[:19]
             conv_id = f"{base_conv_id}_{timestamp}"
             self.active_conversations[conv_id] = {
@@ -544,8 +493,11 @@ class ConversationLogger:
             return "openai_sdk"
         return "unknown"
 
-    def parse_sse_stream(self, sse_text: str) -> dict:
-        """解析 SSE 流，提取完整的响应内容"""
+    def parse_sse_stream(self, sse_text: str, backend_url: str = "") -> dict:
+        """
+        解析 SSE 流，提取完整的响应内容
+        根据后端 URL 自动选择解析格式
+        """
         result = {
             "content": "",
             "reasoning": "",
@@ -554,8 +506,28 @@ class ConversationLogger:
             "finish_reason": None,
             "error": None
         }
+
+        # 根据后端 URL 判断来源
+        is_dashscope = "dashscope" in backend_url.lower() or "aliyuncs" in backend_url.lower()
+
+        # 调试：保存原始 SSE 数据到文件
+        import time
+        debug_file = Path("/tmp/sse_debug_" + str(int(time.time() * 1000)) + ".txt")
+        try:
+            with open(debug_file, "w", encoding="utf-8") as f:
+                f.write(sse_text[:5000])  # 只保存前 5000 字符
+            print(f"[DEBUG] SSE saved to {debug_file} (dashscope={is_dashscope})")
+        except Exception as e:
+            print(f"[DEBUG] Failed to save SSE: {e}")
+
         lines = sse_text.split("\n")
 
+        # 阿里云 dashscope 格式：data: {"output": {"content": "..."}, "usage": {...}}
+        # OpenAI 格式：data: {"choices": [{"delta": {"content": "..."}}]}
+        if is_dashscope:
+            return self._parse_dashscope_sse(sse_text, result)
+
+        # OpenAI 兼容格式解析
         for line in lines:
             if line.startswith("data: "):
                 data = line[6:]
@@ -631,8 +603,112 @@ class ConversationLogger:
 
         return result
 
+    def _parse_dashscope_sse(self, sse_text: str, result: dict) -> dict:
+        """
+        解析阿里云 dashscope SSE 流格式
+        阿里云使用 OpenAI 兼容格式：choices[0].delta.content
+        也处理非 SSE 格式的直接 JSON 响应（如错误）
+        """
+        # 先尝试直接解析 JSON（处理错误响应）
+        sse_text = sse_text.strip()
+        if sse_text and not sse_text.startswith("data:"):
+            try:
+                chunk = json.loads(sse_text)
+                if chunk.get("error"):
+                    result["error"] = chunk.get("error")
+                    return result
+            except:
+                pass  # 不是 JSON，继续按 SSE 解析
+
+        lines = sse_text.split("\n")
+
+        for line in lines:
+            line = line.strip()
+            if line.startswith("data: "):
+                data = line[6:]
+                if data == "[DONE]":
+                    break
+                try:
+                    chunk = json.loads(data)
+
+                    # 检查是否有错误
+                    if chunk.get("error"):
+                        result["error"] = chunk.get("error")
+                        break
+
+                    # 阿里云 OpenAI 兼容格式：choices[0].delta.content
+                    choices = chunk.get("choices", [])
+                    if choices:
+                        delta = choices[0].get("delta", {})
+                        # 提取 content
+                        content = delta.get("content")
+                        if content:
+                            result["content"] += content
+                        # 提取 reasoning_content
+                        reasoning = delta.get("reasoning_content")
+                        if reasoning:
+                            result["reasoning"] += reasoning
+                        # 提取 finish_reason
+                        finish_reason = choices[0].get("finish_reason")
+                        if finish_reason:
+                            result["finish_reason"] = finish_reason
+
+                        # 累积 tool_calls（流式响应中每个 chunk 可能包含一个工具调用片段）
+                        if delta.get("tool_calls"):
+                            for tc in delta["tool_calls"]:
+                                index = tc.get("index", 0)
+                                # 如果是新的 tool_call，创建新条目
+                                if index >= len(result["tool_calls"]):
+                                    # 创建新的工具调用条目，初始化 arguments 为空字符串
+                                    new_tc = {
+                                        "index": index,
+                                        "id": tc.get("id", ""),
+                                        "type": tc.get("type", "function"),
+                                        "function": {
+                                            "name": tc.get("function", {}).get("name", ""),
+                                            "arguments": ""
+                                        }
+                                    }
+                                    result["tool_calls"].append(new_tc)
+
+                                # 累积参数到已存在的条目
+                                if index < len(result["tool_calls"]):
+                                    existing = result["tool_calls"][index]
+                                    # 累积 name（如果有）
+                                    tc_name = tc.get("function", {}).get("name", "")
+                                    if tc_name:
+                                        existing["function"]["name"] = tc_name
+                                    # 累积 arguments（如果有）
+                                    tc_args = tc.get("function", {}).get("arguments", "")
+                                    if tc_args:
+                                        existing["function"]["arguments"] += tc_args
+
+                    # 提取 usage（通常在最后一个 chunk）
+                    usage = chunk.get("usage", {})
+                    if usage:
+                        result["usage"] = usage
+
+                except Exception as e:
+                    result["error"] = str(e)
+
+        return result
+
+    def detect_provider(self, backend_url: str) -> str:
+        """
+        根据后端 URL 判断服务商
+        - 包含 'aliyuncs' → 阿里云百炼
+        - 其他 → OpenAI 兼容
+        """
+        if not backend_url:
+            return "unknown"
+        if "aliyuncs" in backend_url.lower():
+            return "阿里云百炼"
+        else:
+            return "OpenAI 兼容"
+
     def log(self, client_ip: str, headers: dict, request_body: dict, response_data: dict,
-            endpoint: str, model_name: str, is_stream: bool = False, duration: float = None):
+            endpoint: str, model_name: str, is_stream: bool = False, duration: float = None,
+            backend_url: str = ""):
         messages = request_body.get("messages", [])
         conv_id = self.get_conversation_id(client_ip, messages, headers)
         user_id = self.get_user_id(messages)
@@ -642,6 +718,9 @@ class ConversationLogger:
             self.active_conversations[conv_id]["last_updated"] = datetime.now().isoformat()
 
         client = self.identify_client(headers)
+
+        # 根据后端 URL 判断 provider
+        provider = self.detect_provider(backend_url)
 
         conv_dir = self.today_dir / conv_id
         conv_dir.mkdir(parents=True, exist_ok=True)
@@ -675,11 +754,13 @@ class ConversationLogger:
             "conversation_id": conv_id,
             "endpoint": endpoint,
             "model": model_name,
+            "provider": provider,  # 新增：服务商
             "is_stream": is_stream,
             "request": {
                 "model": request_body.get("model", "unknown"),
                 "messages": request_body.get("messages", []),
-                "parameters": {k: v for k, v in request_body.items() if k not in ["model", "messages", "endpoint"]}
+                "parameters": {k: v for k, v in request_body.items() if k not in ["model", "messages", "endpoint"]},
+                "headers": headers  # 新增：记录请求头，用于调试会话标识
             },
             "response": {
                 "content": content,
@@ -778,42 +859,61 @@ class ModelProxy:
                 if port is not None and model_port != port:
                     continue  # 跳过非当前端口的模型
 
-                if model_key in [f"{p}/{m['id']}" for p in providers for m in providers[p].get("models", [])]:
-                    for provider_name, provider_config in providers.items():
-                        base_url = provider_config.get("baseUrl", "")
-                        api_key = provider_config.get("apiKey", "")
-                        for model in provider_config.get("models", []):
-                            full_key = f"{provider_name}/{model.get('id', '')}"
-                            if full_key == model_key:
-                                self.models[model_key] = {
-                                    "url": base_url,
-                                    "name": model.get("name", model.get("id", "")),
-                                    "provider": provider_name,
-                                    "model_id": model.get("id", ""),
-                                    "api_key": api_key  # 保存 API 密钥
-                                }
-                                break
+                for provider_name, provider_config in providers.items():
+                    base_url = provider_config.get("baseUrl", "")
+                    api_key = provider_config.get("apiKey", "")
+                    for model in provider_config.get("models", []):
+                        model_id = model.get("id", "")
+                        full_key = f"{provider_name}/{model_id}"
+                        if full_key == model_key:
+                            # 原样复刻原始模型的所有参数
+                            self.models[model_key] = {
+                                "url": base_url,
+                                "name": model.get("name", model_id),
+                                "provider": provider_name,
+                                "model_id": model_id,
+                                "api_key": api_key,
+                                # 模型能力
+                                "input": model.get("input", ["text"]),
+                                "reasoning": model.get("reasoning", False),
+                                "contextWindow": model.get("contextWindow", 128000),
+                                "maxTokens": model.get("maxTokens", 4096),
+                                "cost": model.get("cost", {}),
+                                "api": model.get("api", "openai-completions")
+                            }
+                            break
         except Exception as e:
             print(f"Error loading models from openclaw.json: {e}")
 
-    def get_backend_url(self, model_name: str) -> Optional[str]:
-        """根据模型名获取后端 URL"""
+    def get_backend_info(self, model_name: str) -> Tuple[Optional[str], Optional[str]]:
+        """根据模型名获取后端 URL 和 API key
+        返回：(url, api_key)
+
+        支持的格式：
+        1. 完整匹配：custom-dashscope-aliyuncs-com/qwen3.5-plus
+        2. localproxy 格式：localproxy-8890/qwen3.5-plus -> 通过 model_id 匹配
+        3. 简化格式：qwen3.5-plus -> 查找包含该 model_id 的条目
+        """
+        # 直接匹配
         if model_name in self.models:
-            return self.models[model_name]["url"]
+            return (self.models[model_name]["url"], self.models[model_name].get("api_key", ""))
 
-        # 尝试模糊匹配（去除版本号等）
-        model_lower = model_name.lower()
-        for name, info in self.models.items():
-            name_lower = name.lower().replace("-", "").replace("_", "")
-            model_clean = model_lower.replace("-", "").replace("_", "")
-            if name_lower in model_clean or model_clean in name_lower:
-                return info["url"]
+        # 处理 localproxy-XXX/model-id 格式
+        if model_name.startswith("localproxy-"):
+            parts = model_name.split("/", 1)
+            if len(parts) == 2:
+                model_id = parts[1]
+                for key, info in self.models.items():
+                    if info.get("model_id") == model_id:
+                        return (info["url"], info.get("api_key", ""))
 
-        # 返回默认模型
-        if self.default_model and self.default_model in self.models:
-            return self.models[self.default_model]["url"]
+        # 简化格式：直接使用 model-id 匹配（斜杠分隔的后缀匹配）
+        # 例如：qwen3.5-plus 匹配 custom-dashscope-aliyuncs-com/qwen3.5-plus
+        for key, info in self.models.items():
+            if key.endswith(f"/{model_name}"):
+                return (info["url"], info.get("api_key", ""))
 
-        return None
+        return (None, None)
 
     async def handle_request(self, request: web.Request) -> web.Response:
         client_ip = request.remote or "unknown"
@@ -830,7 +930,7 @@ class ModelProxy:
 
         # 获取请求的模型名
         requested_model = request_body.get("model", "")
-        backend_url = self.get_backend_url(requested_model)
+        backend_url, api_key = self.get_backend_info(requested_model)
         used_model_name = requested_model if backend_url else "unknown"
 
         if not backend_url:
@@ -838,16 +938,19 @@ class ModelProxy:
                 "error": f"模型 '{requested_model}' 未配置，可用的模型：{list(self.models.keys())}"
             }, status=400)
 
-        # 获取 API 密钥
-        api_key = self.models.get(requested_model, {}).get("api_key", "")
+        print(f"[DEBUG] requested_model={requested_model}, api_key={api_key[:20] + '...' if api_key else 'None'}")
 
         # 保存原始 path 用于日志记录
         original_path = path
 
-        # 构建后端 URL - backend_url 已包含/v1，path 去掉前导斜杠和 v1 前缀
+        # 构建后端 URL
+        # 逻辑：如果 backend_url 已包含 /v1，则去掉 path 中的 v1/ 前缀；否则保留完整路径
         raw_path = path.lstrip("/")
-        if raw_path.startswith("v1/"):
-            raw_path = raw_path[3:]
+        if backend_url.rstrip("/").endswith("/v1"):
+            # backend_url 已包含 /v1，去掉 path 中的 v1/ 前缀
+            if raw_path.startswith("v1/"):
+                raw_path = raw_path[3:]
+        # 否则保留完整路径（如 MiniMax 的 baseUrl 是 https://api.minimaxi.com/anthropic，需要拼接 /v1/messages）
         url = f"{backend_url}/{raw_path}"
 
         # 如果是流式请求，添加 stream_options 以获取 usage
@@ -855,10 +958,19 @@ class ModelProxy:
         if request_body_copy.get("stream", False) and "stream_options" not in request_body_copy:
             request_body_copy["stream_options"] = {"include_usage": True}
 
-        # 构建请求头，添加 Authorization
-        forward_headers = {k: v for k, v in headers.items() if k.lower() not in ['host', 'content-length']}
-        if api_key and "authorization" not in [k.lower() for k in forward_headers.keys()]:
+        # 转换模型名：将 localproxy-XXX/model-id 转换为后端实际的 model-id
+        if "model" in request_body_copy and requested_model.startswith("localproxy-"):
+            # 从 localproxy-8889/gemma-4-31b-it 提取 gemma-4-31b-it
+            model_id = requested_model.split("/", 1)[1]
+            request_body_copy["model"] = model_id
+
+        # 构建请求头，添加 Authorization（强制覆盖，确保使用正确的 API key）
+        forward_headers = {k: v for k, v in headers.items() if k.lower() not in ['host', 'content-length', 'authorization']}
+        if api_key:
             forward_headers["Authorization"] = f"Bearer {api_key}"
+            print(f"[DEBUG] Added Authorization header for {url}")
+        else:
+            print(f"[DEBUG] No API key for {url}")
         request_start = datetime.now()
 
         # 配置超时：连接 10 秒，读取 120 秒（推理模型可能需要较长时间）
@@ -880,7 +992,7 @@ class ModelProxy:
                     if is_stream:
                         # 流式响应：读取完整文本后解析 SSE
                         sse_text = await resp.text()
-                        response_data = self.logger.parse_sse_stream(sse_text)
+                        response_data = self.logger.parse_sse_stream(sse_text, url)
 
                         # 创建代理响应（流式返回）
                         proxy_resp = web.StreamResponse(status=resp.status, headers={"Content-Type": "text/event-stream"})
@@ -896,18 +1008,19 @@ class ModelProxy:
                     request_end = datetime.now()
                     duration = (request_end - request_start).total_seconds()
 
-                    # 记录日志（只记录 v1 开头的请求）
-                    if original_path.startswith("v1/"):
-                        self.logger.log(
-                            client_ip=client_ip,
-                            headers=headers,
-                            request_body=request_body,
-                            response_data=response_data,
-                            endpoint=original_path,
-                            model_name=used_model_name,
-                            is_stream=is_stream,
-                            duration=duration  # 新增：运行时间
-                        )
+                    # 记录日志（记录所有请求，不只是 v1 开头的）
+                    # 原始路径可能是 /v1/chat/completions 或 /chat/completions
+                    self.logger.log(
+                        client_ip=client_ip,
+                        headers=headers,
+                        request_body=request_body,
+                        response_data=response_data,
+                        endpoint=original_path,
+                        model_name=used_model_name,
+                        is_stream=is_stream,
+                        duration=duration,  # 新增：运行时间
+                        backend_url=backend_url  # 新增：后端 URL 用于判断 provider
+                    )
 
                     return proxy_resp
 

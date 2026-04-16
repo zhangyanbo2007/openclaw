@@ -53,7 +53,9 @@ class LogViewerHandler(SimpleHTTPRequestHandler):
                 query.get("conv_id", [""])[0]
             )
         elif parsed.path.startswith("/api/conversations") or parsed.path.startswith("/api/logs/conversations"):
-            self.get_conversations(query.get("date", [datetime.now().strftime("%Y-%m-%d")])[0])
+            self.get_conversations(query.get("date", [datetime.now().strftime("%Y-%m-%d")])[0],
+                                   query.get("start", ["00:00"])[0],
+                                   query.get("end", ["23:59"])[0])
         elif parsed.path == "/api/available_dates":
             self.get_available_dates()
         elif parsed.path.startswith("/api/requests") or parsed.path.startswith("/api/logs/requests"):
@@ -105,6 +107,9 @@ class LogViewerHandler(SimpleHTTPRequestHandler):
             self.sync_to_openclaw_post(body)
         elif parsed.path == "/api/agent/models":
             self.get_agent_models_post(body)
+        elif parsed.path == "/api/viewer/stop":
+            # 停止日志查看器服务（不影响代理进程）
+            self.stop_viewer()
         else:
             self.send_error(404)
 
@@ -126,8 +131,8 @@ class LogViewerHandler(SimpleHTTPRequestHandler):
         self.end_headers()
         self.wfile.write(json.dumps(data, ensure_ascii=False).encode())
 
-    def get_conversations(self, date):
-        """获取会话列表"""
+    def get_conversations(self, date, time_start="00:00", time_end="23:59"):
+        """获取会话列表，支持时间范围过滤"""
         date_dir = LOGS_DIR / date
         conversations = []
 
@@ -139,11 +144,17 @@ class LogViewerHandler(SimpleHTTPRequestHandler):
                         with open(index_file, "r", encoding="utf-8") as f:
                             conv_data = json.load(f)
                         conv_data["id"] = conv_dir.name
-                        # 计算总 token 数
-                        requests = conv_data.get("requests", [])
-                        total_tokens = sum(r.get("tokens", 0) for r in requests)
-                        conv_data["total_tokens"] = total_tokens
-                        conversations.append(conv_data)
+                        # 检查会话开始时间是否在指定范围内
+                        conv_started_at = conv_data.get("started_at", "")
+                        conv_time = conv_started_at[11:16] if conv_started_at else ""
+
+                        # 只添加时间范围内的会话
+                        if time_start <= conv_time <= time_end:
+                            # 计算总 token 数
+                            requests = conv_data.get("requests", [])
+                            total_tokens = sum(r.get("tokens", 0) for r in requests)
+                            conv_data["total_tokens"] = total_tokens
+                            conversations.append(conv_data)
 
         self.send_json({"success": True, "conversations": conversations})
 
@@ -540,7 +551,6 @@ class LogViewerHandler(SimpleHTTPRequestHandler):
             model_display = model_info.get("model", "N/A")
             prompt_tokens = model_info.get("prompt_tokens", 0)
             completion_tokens = model_info.get("completion_tokens", 0)
-            total_tokens = model_info.get("total_tokens", 0)
 
             # 生成模型输入的 HTML
             input_html = ""
@@ -583,11 +593,13 @@ class LogViewerHandler(SimpleHTTPRequestHandler):
                     </td>
                     <td style="width: 100px; vertical-align: top; text-align: center; padding-top: 12px;">
                         <span class="tokens">{prompt_tokens}/{completion_tokens}</span>
-                        <div style="margin-top: 6px; font-size: 11px; color: #666;">总 Token: {total_tokens}</div>
                     </td>
                     <td style="width: 70px; vertical-align: top; text-align: center; padding-top: 12px;" class="interval">{interval}</td>
                 </tr>
             ''')
+
+        # 生成返回链接的日期参数
+        date_param = date
 
         html = f'''<!DOCTYPE html>
 <html lang="zh-CN">
@@ -625,7 +637,7 @@ class LogViewerHandler(SimpleHTTPRequestHandler):
 <body>
     <div class="container">
         <div class="breadcrumb">
-            <a href="/">← 返回首页</a>
+            <a href="/?date={date_param}">← 返回首页</a>
         </div>
 
         <div class="legend">
@@ -762,12 +774,12 @@ class LogViewerHandler(SimpleHTTPRequestHandler):
             self.send_json({"success": False, "error": str(e)})
 
     def detect_agent(self):
-        """检测当前环境的智能体类型"""
+        """检测当前环境的智能体类型 - 根据执行技能的上下文判断"""
         home = Path.home()
         openclaw_config = home / ".openclaw" / "openclaw.json"
         claude_settings = home / ".claude" / "settings.json"
 
-        # 检测逻辑：优先根据技能所在的母目录判断
+        # 检测逻辑：根据技能所在的母目录判断（最可靠）
         # 技能路径格式：~/.openclaw/skills/model-log-viewer/scripts 或 ~/.claude/projects/.../skills/model-log-viewer/scripts
         base_dir = BASE_DIR  # 当前脚本所在目录：skills/model-log-viewer/scripts
         parent_dir = base_dir.parent  # skills/model-log-viewer
@@ -780,7 +792,7 @@ class LogViewerHandler(SimpleHTTPRequestHandler):
                 "agentType": "openclaw",
                 "configPath": str(openclaw_config),
                 "autoDetected": True,
-                "detectionMethod": "parent_dir"
+                "detectionMethod": "skill_parent_dir"
             })
         elif great_grandparent_dir.name == ".claude":
             self.send_json({
@@ -788,7 +800,7 @@ class LogViewerHandler(SimpleHTTPRequestHandler):
                 "agentType": "claudecode",
                 "configPath": str(claude_settings),
                 "autoDetected": True,
-                "detectionMethod": "parent_dir"
+                "detectionMethod": "skill_parent_dir"
             })
         elif openclaw_config.exists():
             # 回退逻辑：检查配置文件
@@ -922,12 +934,33 @@ class LogViewerHandler(SimpleHTTPRequestHandler):
             with open(config_file, "r", encoding="utf-8") as f:
                 proxy_config = json.load(f)
 
-            model_port_mapping = proxy_config.get("model_port_mapping", {})
+            # 获取已启用的模型列表
+            enabled_models = set(proxy_config.get("enabled_models", []))
+
+            # 构建新的 model_port_mapping：只保留已启用的模型
+            old_mapping = proxy_config.get("model_port_mapping", {})
+            model_port_mapping = {
+                k: v for k, v in old_mapping.items()
+                if k in enabled_models
+            }
+
+            # 更新 proxy_config.json（只保留已启用的模型）
+            proxy_config["model_port_mapping"] = model_port_mapping
+            with open(config_file, "w", encoding="utf-8") as f:
+                json.dump(proxy_config, f, indent=2, ensure_ascii=False)
 
             # 读取 openclaw.json
             openclaw_config_path = Path.home() / ".openclaw" / "openclaw.json"
             with open(openclaw_config_path, "r", encoding="utf-8") as f:
                 openclaw_config = json.load(f)
+
+            # 同步前备份原文件（带时间戳）
+            from datetime import datetime
+            timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+            backup_path = openclaw_config_path.with_suffix(f".json.backup.{timestamp}")
+            import shutil
+            shutil.copy2(openclaw_config_path, backup_path)
+            backup_info = f"备份：{backup_path.name}"
 
             # 获取当前所有模型信息（包括被过滤的）
             all_providers = openclaw_config.get("models", {}).get("providers", {})
@@ -938,20 +971,33 @@ class LogViewerHandler(SimpleHTTPRequestHandler):
                     model_id = model.get("id", "")
                     model_name = model.get("name", model_id)
                     model_key = f"{provider_name}/{model_id}"
+                    # 保存完整模型配置，包括 input、reasoning 等
                     all_models[model_key] = {
                         "url": base_url,
                         "name": model_name,
                         "provider": provider_name,
-                        "model_id": model_id
+                        "model_id": model_id,
+                        # 复制所有模型能力字段
+                        "input": model.get("input", ["text"]),
+                        "reasoning": model.get("reasoning", False),
+                        "contextWindow": model.get("contextWindow", 128000),
+                        "maxTokens": model.get("maxTokens", 4096),
+                        "cost": model.get("cost", {}),
+                        "api": model.get("api", "openai-completions")
                     }
 
             # 反转映射：port -> model_key
             port_to_model = {v: k for k, v in model_port_mapping.items()}
-            valid_model_keys = set(port_to_model.values())  # 有效的 model_key 集合
 
-            # 收集需要删除的旧 localproxy-* 配置
+            # 只保留已启用的模型配置（基于 enabled_models 列表）
+            enabled_model_keys = {str(m) for m in enabled_models}
+            valid_model_keys = {k for k in port_to_model.values() if k in enabled_model_keys}
+            current_localproxy_names = {f"localproxy-{port}" for port, key in port_to_model.items() if key in enabled_model_keys}
+
+            # 收集所有需要删除的旧 localproxy-* 配置
             old_localproxy_names = {name for name in all_providers.keys() if name.startswith("localproxy-")}
-            to_remove = old_localproxy_names - set(port_to_model.keys())
+            # 计算差集：旧的 - 当前的 = 需要删除的
+            to_remove = old_localproxy_names - current_localproxy_names
 
             # 删除不再使用的 localproxy-* 配置
             for provider_name in sorted(to_remove):  # 排序保证一致性
@@ -964,11 +1010,19 @@ class LogViewerHandler(SimpleHTTPRequestHandler):
                     model_key = f"{provider_name}/{model.get('id', '')}"
                     openclaw_config["agents"]["defaults"]["models"].pop(model_key, None)
 
-            # 清理 agents.defaults.models 中所有无效的 localproxy-* 引用（即使 models.providers 中已不存在）
+            # 二次清理：确保 agents.defaults.models 中所有 localproxy-* 引用都是有效的
+            # 即使 models.providers 中已不存在，也要清理
             defaults_models = openclaw_config.get("agents", {}).get("defaults", {}).get("models", {})
             for model_key in list(defaults_models.keys()):
+                # 清理所有不在 valid_model_keys 中的 localproxy-* 引用
                 if model_key.startswith("localproxy-") and model_key not in valid_model_keys:
                     openclaw_config["agents"]["defaults"]["models"].pop(model_key, None)
+
+            # 额外清理：确保 auth.profiles 中所有 localproxy-* 引用都是有效的
+            auth_profiles = openclaw_config.get("auth", {}).get("profiles", {})
+            for profile_key in list(auth_profiles.keys()):
+                if profile_key.startswith("localproxy-") and profile_key not in {f"{name}:default" for name in current_localproxy_names}:
+                    openclaw_config["auth"]["profiles"].pop(profile_key, None)
 
             # 为每个端口生成 provider 配置，并同步更新 auth 和 agents
             for port_str, model_key in port_to_model.items():
@@ -976,32 +1030,47 @@ class LogViewerHandler(SimpleHTTPRequestHandler):
                 provider_name = f"localproxy-{port}"
                 localproxy_model_key = f"{provider_name}/{model_key.split('/')[1]}"  # 使用 localproxy-XXX/model-id 格式
 
-                # 获取模型信息
-                model_info = all_models.get(model_key)
+                # 获取原始模型完整配置
+                original_model_info = all_models.get(model_key)
 
-                if model_info:
-                    # 1. 更新 models.providers（model.name 包含端口号标识）
-                    openclaw_config["models"]["providers"][provider_name] = {
-                        "baseUrl": f"http://localhost:{port}/v1",
-                        "apiKey": "not-needed",
-                        "api": "openai-completions",
-                        "models": [{
-                            "id": model_info["model_id"],
-                            "name": f"{model_info['name']} ({port})",
-                            "api": "openai-completions"
-                        }]
-                    }
+                # 构建 localproxy 模型配置，继承原始模型所有能力
+                localproxy_model_config = {
+                    "id": original_model_info["model_id"] if original_model_info else model_key.split('/')[1],
+                    "name": f"{original_model_info['name'] if original_model_info else model_key} ({port})",
+                    "api": "openai-completions"
+                }
 
-                    # 2. 更新 auth.profiles
-                    openclaw_config["auth"]["profiles"][f"{provider_name}:default"] = {
-                        "provider": provider_name,
-                        "mode": "api_key"
-                    }
+                # 继承原始模型的所有能力字段
+                if original_model_info:
+                    if "reasoning" in original_model_info:
+                        localproxy_model_config["reasoning"] = original_model_info["reasoning"]
+                    if "input" in original_model_info:
+                        localproxy_model_config["input"] = original_model_info["input"]
+                    if "contextWindow" in original_model_info:
+                        localproxy_model_config["contextWindow"] = original_model_info["contextWindow"]
+                    if "maxTokens" in original_model_info:
+                        localproxy_model_config["maxTokens"] = original_model_info["maxTokens"]
+                    if "cost" in original_model_info:
+                        localproxy_model_config["cost"] = original_model_info["cost"]
 
-                    # 3. 更新 agents.defaults.models（alias 包含端口号标识）
-                    openclaw_config["agents"]["defaults"]["models"][localproxy_model_key] = {
-                        "alias": f"{model_info['name']} ({port})"
-                    }
+                # 1. 更新 models.providers
+                openclaw_config["models"]["providers"][provider_name] = {
+                    "baseUrl": f"http://localhost:{port}/v1",
+                    "apiKey": "not-needed",
+                    "api": "openai-completions",
+                    "models": [localproxy_model_config]
+                }
+
+                # 2. 更新 auth.profiles
+                openclaw_config["auth"]["profiles"][f"{provider_name}:default"] = {
+                    "provider": provider_name,
+                    "mode": "api_key"
+                }
+
+                # 3. 更新 agents.defaults.models
+                openclaw_config["agents"]["defaults"]["models"][localproxy_model_key] = {
+                    "alias": f"{original_model_info['name'] if original_model_info else model_key} ({port})"
+                }
 
             # 写回 openclaw.json
             with open(openclaw_config_path, "w", encoding="utf-8") as f:
@@ -1013,6 +1082,7 @@ class LogViewerHandler(SimpleHTTPRequestHandler):
             self.send_json({
                 "success": True,
                 "message": f"已同步 {len(port_to_model)} 个代理配置到 openclaw.json，删除了 {len(to_remove)} 个旧配置",
+                "backup": backup_info,
                 "restart": restart_result
             })
         except Exception as e:
@@ -1040,6 +1110,14 @@ class LogViewerHandler(SimpleHTTPRequestHandler):
 
             with open(settings_path, "r", encoding="utf-8") as f:
                 settings = json.load(f)
+
+            # 同步前备份原文件（带时间戳）
+            from datetime import datetime
+            timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+            backup_path = settings_path.with_suffix(f".json.backup.{timestamp}")
+            import shutil
+            shutil.copy2(settings_path, backup_path)
+            backup_info = f"备份：{backup_path.name}"
 
             # 反转映射：port -> model_key
             port_to_model = {v: k for k, v in model_port_mapping.items()}
@@ -1074,16 +1152,20 @@ class LogViewerHandler(SimpleHTTPRequestHandler):
 
             self.send_json({
                 "success": True,
-                "message": f"已同步 {len(port_to_model)} 个代理配置到 settings.json"
+                "message": f"已同步 {len(port_to_model)} 个代理配置到 settings.json",
+                "backup": backup_info
             })
         except Exception as e:
             self.send_json({"success": False, "error": str(e)})
 
     def restart_gateway(self):
-        """重启 gateway"""
+        """重启 gateway，增加等待时间并添加健康检查"""
         try:
             import signal
-            # 查找 gateway 进程 ID
+            import urllib.request
+            import urllib.error
+
+            # 1. 查找 gateway 进程 ID
             result = subprocess.run("pgrep -f 'openclaw-gateway'", shell=True, capture_output=True, text=True)
             if result.stdout.strip():
                 pids = result.stdout.strip().split()
@@ -1092,9 +1174,21 @@ class LogViewerHandler(SimpleHTTPRequestHandler):
                         os.kill(int(pid), signal.SIGTERM)
                     except ProcessLookupError:
                         pass
-                time.sleep(3)  # 等待 3 秒确保进程完全退出
+                # 等待更长时间确保进程完全退出
+                time.sleep(5)  # 从 3 秒增加到 5 秒
 
-            # 重新启动 gateway
+            # 2. 确认旧进程已退出
+            result = subprocess.run("pgrep -f 'openclaw-gateway'", shell=True, capture_output=True, text=True)
+            if result.stdout.strip():
+                # 如果还有进程在运行，强制终止
+                for pid in result.stdout.strip().split():
+                    try:
+                        os.kill(int(pid), signal.SIGKILL)
+                    except ProcessLookupError:
+                        pass
+                time.sleep(2)
+
+            # 3. 重新启动 gateway
             subprocess.Popen(
                 ["openclaw", "gateway"],
                 stdout=subprocess.DEVNULL,
@@ -1102,8 +1196,51 @@ class LogViewerHandler(SimpleHTTPRequestHandler):
                 start_new_session=True,
                 cwd=str(Path.home())
             )
-            time.sleep(8)  # 等待 8 秒确保服务完全启动
-            return {"success": True, "message": "gateway 已重启"}
+
+            # 4. 增加等待时间并轮询健康检查
+            # OpenClaw gateway 通常需要 5-10 秒启动
+            max_wait = 30  # 最多等待 30 秒
+            check_interval = 2  # 每 2 秒检查一次
+            elapsed = 0
+
+            # 先等待 5 秒让进程启动
+            time.sleep(5)
+
+            # 健康检查：尝试连接 OpenClaw 端口（通常是 4321 或其他配置端口）
+            while elapsed < max_wait:
+                # 检查进程是否还在运行
+                result = subprocess.run("pgrep -f 'openclaw-gateway'", shell=True, capture_output=True, text=True)
+                if not result.stdout.strip():
+                    return {"success": False, "error": "gateway 进程启动后意外退出"}
+
+                # 尝试发送简单请求检测服务是否响应
+                try:
+                    # 检查是否监听了常见端口
+                    health_check_passed = False
+                    for port in [4321, 8080, 3000]:
+                        if is_port_in_use(port):
+                            # 端口被占用，尝试发送 HTTP 请求
+                            try:
+                                req = urllib.request.Request(f"http://127.0.0.1:{port}/", method="GET")
+                                req.add_header("Connection", "close")
+                                with urllib.request.urlopen(req, timeout=3) as response:
+                                    health_check_passed = True
+                                    break
+                            except:
+                                pass
+
+                    if health_check_passed:
+                        return {"success": True, "message": f"gateway 已重启并健康检查通过（等待 {elapsed + 5} 秒）"}
+
+                except Exception as e:
+                    pass  # 健康检查失败，继续等待
+
+                time.sleep(check_interval)
+                elapsed += check_interval
+
+            # 超时但进程还在运行，返回成功但提示健康检查超时
+            return {"success": True, "message": f"gateway 已启动但健康检查超时（等待 {max_wait} 秒），可能使用非标准端口"}
+
         except Exception as e:
             return {"success": False, "error": str(e)}
 
@@ -1111,12 +1248,31 @@ class LogViewerHandler(SimpleHTTPRequestHandler):
         """启动代理服务 - 先检查 API 密钥，再启动，然后测试验证"""
         global proxy_processes, proxy_logs
 
-        # 检查是否已在进程中且正在运行
-        if port in proxy_processes and proxy_processes[port].poll() is None:
-            self.send_json({"success": False, "error": f"Proxy already running on port {port}"})
-            return
+        # 1. 先检查端口是否被占用（包括进程内和外部进程）
+        port_occupied = False
+        external_process = False
 
-        # 读取配置获取模型映射
+        # 检查是否在进程内且正在运行
+        if port in proxy_processes and proxy_processes[port].poll() is None:
+            port_occupied = True
+        # 检查是否被外部进程占用
+        elif is_port_in_use(port):
+            port_occupied = True
+            external_process = True
+
+        # 如果端口被占用，先杀掉旧进程再重启
+        if port_occupied:
+            try:
+                # 杀掉占用端口的进程
+                subprocess.run(f"pkill -9 -f 'model_proxy.*{port}'", shell=True, timeout=5)
+                time.sleep(0.5)
+            except:
+                pass
+            # 清理进程记录
+            if port in proxy_processes:
+                del proxy_processes[port]
+
+        # 2. 读取配置获取模型映射
         config_file = BASE_DIR / config_file_name
         with open(config_file, "r", encoding="utf-8") as f:
             proxy_config = json.load(f)
@@ -1142,7 +1298,7 @@ class LogViewerHandler(SimpleHTTPRequestHandler):
 
         provider_name, model_id = parts
 
-        # 检查 API 密钥（先检查 openclaw.json，再检查 agents/main/agent/models.json）
+        # 3. 检查 API 密钥（先检查 openclaw.json，再检查 agents/main/agent/models.json）
         api_key = None
         api_source = None
 
@@ -1174,15 +1330,6 @@ class LogViewerHandler(SimpleHTTPRequestHandler):
                 "error": f"模型 '{model_key}' 的提供者 '{provider_name}' 没有配置 API 密钥，请在 openclaw.json 或 agents/main/agent/models.json 中配置"
             })
             return
-
-        # 检查端口是否被外部进程占用
-        if is_port_in_use(port):
-            # 先停止外部进程
-            try:
-                subprocess.run(f"pkill -f 'model_proxy.*{port}'", shell=True, timeout=5)
-                time.sleep(0.5)
-            except:
-                pass
 
         try:
             # 查找 model_proxy.py
@@ -1228,20 +1375,47 @@ class LogViewerHandler(SimpleHTTPRequestHandler):
             # 等待 2 秒让代理启动
             time.sleep(2)
 
+            # 检查进程是否还活着
+            if proc.poll() is not None:
+                # 进程已退出，尝试读取最后一行日志获取错误信息
+                exit_code = proc.poll()
+                error_msg = f"代理进程启动后退出，退出码：{exit_code}"
+                if proxy_logs.get(port):
+                    error_msg += f"\n最后日志：{proxy_logs[port][-3:]}"
+                self.send_json({"success": False, "error": error_msg})
+                # 清理进程记录
+                del proxy_processes[port]
+                return
+
             # 发送测试请求验证代理是否可用
             test_result = self.test_proxy(port)
 
-            self.send_json({
-                "success": True,
-                "message": f"Proxy started on port {port} (API 密钥来自 {api_source})",
-                "pid": proc.pid,
-                "test": test_result
-            })
+            # 根据测试结果返回
+            if test_result.get("success"):
+                self.send_json({
+                    "success": True,
+                    "message": f"Proxy started on port {port} (API 密钥来自 {api_source})",
+                    "pid": proc.pid,
+                    "test": test_result
+                })
+            else:
+                # 测试失败，清理进程
+                try:
+                    proc.terminate()
+                    proc.wait(timeout=3)
+                except:
+                    proc.kill()
+                del proxy_processes[port]
+                self.send_json({
+                    "success": False,
+                    "error": f"代理启动成功但测试失败：{test_result.get('error', '未知错误')}",
+                    "test": test_result
+                })
         except Exception as e:
             self.send_json({"success": False, "error": str(e)})
 
     def test_proxy(self, port):
-        """测试代理是否可用"""
+        """测试代理是否可用 - 通过代理端口发送请求"""
         try:
             # 读取配置获取模型映射
             config_file = BASE_DIR / "proxy_config.json"
@@ -1258,36 +1432,24 @@ class LogViewerHandler(SimpleHTTPRequestHandler):
             if not model_key:
                 return {"success": False, "error": "未找到模型映射"}
 
-            # 读取 openclaw.json 获取原始模型信息
-            openclaw_config_path = Path.home() / ".openclaw" / "openclaw.json"
-            with open(openclaw_config_path, "r", encoding="utf-8") as f:
-                openclaw_config = json.load(f)
-
             # 解析模型密钥获取 provider 和 model_id
             parts = model_key.split("/")
             if len(parts) != 2:
                 return {"success": False, "error": f"无效的模型密钥：{model_key}"}
 
             provider_name, model_id = parts
-            provider = openclaw_config.get("models", {}).get("providers", {}).get(provider_name)
 
-            if not provider:
-                return {"success": False, "error": f"未找到提供者：{provider_name}"}
-
-            # 获取 API 密钥和基础 URL
-            api_key = provider.get("apiKey", "")
-            base_url = provider.get("baseUrl", "")
-
-            # 发送测试请求
-            test_url = f"{base_url}/chat/completions"
+            # 测试请求发送到本地代理端口，而不是后端 API
+            test_url = f"http://127.0.0.1:{port}/v1/chat/completions"
             headers = {
                 "Content-Type": "application/json",
-                "Authorization": f"Bearer {api_key}"
+                "Authorization": "Bearer test-key"  # 代理不需要验证 API key
             }
             data = {
-                "model": model_id,
+                "model": model_id,  # 代理会根据配置转发到正确的后端
                 "messages": [{"role": "user", "content": "Hi"}],
-                "max_tokens": 5
+                "max_tokens": 5,
+                "stream": False
             }
 
             import urllib.request
@@ -1299,9 +1461,10 @@ class LogViewerHandler(SimpleHTTPRequestHandler):
             )
             req.add_header("Connection", "close")
 
-            with urllib.request.urlopen(req, timeout=10) as response:
+            with urllib.request.urlopen(req, timeout=30) as response:
                 result = json.loads(response.read().decode("utf-8"))
-                if "choices" in result or "data" in result:
+                # 支持 OpenAI 和 Anthropic 格式
+                if "choices" in result or "data" in result or "content" in result or "id" in result:
                     return {"success": True, "message": f"测试成功，模型：{model_id}"}
                 else:
                     return {"success": False, "error": f"响应异常：{result}"}
@@ -1336,6 +1499,69 @@ class LogViewerHandler(SimpleHTTPRequestHandler):
             proc.kill()
             del proxy_processes[port]
             self.send_json({"success": True, "message": f"Proxy killed on port {port}"})
+        except Exception as e:
+            self.send_json({"success": False, "error": str(e)})
+
+    def stop_viewer(self):
+        """停止日志查看器服务（不影响代理进程）"""
+        import os
+        import signal
+
+        # 获取当前进程 ID（不杀死自己，而是杀死同组的其他进程）
+        current_pid = os.getpid()
+
+        # 查找所有 server.py 进程
+        try:
+            result = subprocess.run(
+                ["pgrep", "-f", "server.py.*9001"],
+                capture_output=True,
+                text=True
+            )
+            pids = result.stdout.strip().split() if result.stdout.strip() else []
+
+            if not pids:
+                self.send_json({
+                    "success": True,
+                    "message": "日志查看器服务未运行",
+                    "viewer_running": False
+                })
+                return
+
+            # 杀死所有匹配的进程（除了当前进程）
+            for pid in pids:
+                if pid and int(pid) != current_pid:
+                    try:
+                        os.kill(int(pid), signal.SIGTERM)
+                    except ProcessLookupError:
+                        pass  # 进程已经不存在
+
+            # 等待进程结束
+            import time
+            time.sleep(1)
+
+            # 检查是否还有进程在运行
+            result2 = subprocess.run(
+                ["pgrep", "-f", "server.py.*9001"],
+                capture_output=True,
+                text=True
+            )
+            remaining_pids = result2.stdout.strip().split() if result2.stdout.strip() else []
+
+            # 强制杀死剩余的进程
+            for pid in remaining_pids:
+                if pid and int(pid) != current_pid:
+                    try:
+                        os.kill(int(pid), signal.SIGKILL)
+                    except ProcessLookupError:
+                        pass
+
+            self.send_json({
+                "success": True,
+                "message": "日志查看器服务已停止",
+                "viewer_running": False,
+                "proxy_unchanged": True  # 代理进程未受影响
+            })
+
         except Exception as e:
             self.send_json({"success": False, "error": str(e)})
 

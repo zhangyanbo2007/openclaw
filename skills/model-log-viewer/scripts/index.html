@@ -641,6 +641,11 @@
             font-size: 13px;
             color: var(--primary);
             font-weight: 600;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            max-width: 300px;
+            display: block;
         }
 
         .user-id {
@@ -751,7 +756,7 @@
                         <th style="width: 160px;">开始时间</th>
                         <th style="width: 160px;">最后更新</th>
                         <th style="width: 100px;">总 Token</th>
-                        <th style="width: 120px;">操作</th>
+                        <th style="width: 120px;">详情</th>
                     </tr>
                 </thead>
                 <tbody id="conversationsBody"></tbody>
@@ -910,16 +915,38 @@
                         delete currentPortMapping[modelKey];
                         await saveTempConfig();
                         showAlert('启动失败：' + (result.error || '未知错误'), 'error');
+                        // 强制刷新状态和模型列表
+                        setTimeout(() => { checkStatus(); }, 100);
                     } else if (result.test && !result.test.success) {
                         // 启动成功但测试失败
                         delete currentPortMapping[modelKey];
                         await saveTempConfig();
                         showAlert(`启动成功但测试失败：${result.test.error}`, 'error');
+                        // 强制刷新状态和模型列表
+                        setTimeout(() => { checkStatus(); }, 100);
                     } else if (result.test && result.test.success) {
                         // 启动成功且测试通过
                         showAlert(`启动成功！${result.test.message}`, 'success');
+                        // 强制刷新状态和模型列表
+                        setTimeout(() => { checkStatus(); }, 100);
                     } else {
+                        // 没有 test 字段，需要检查状态确认是否真的启动成功
                         showAlert('正在启动代理，请稍候...', 'info');
+                        // 延迟检查状态，如果启动失败则取消勾选
+                        setTimeout(() => {
+                            checkStatus().then(() => {
+                                // 检查端口是否真的在运行
+                                const portStatus = window.proxyStatus?.[String(nextPort)];
+                                if (!portStatus?.running) {
+                                    // 启动失败，取消勾选
+                                    delete currentPortMapping[modelKey];
+                                    saveTempConfig();
+                                    showAlert('代理启动失败，未能检测到运行中的服务', 'error');
+                                    // 重新渲染模型列表
+                                    renderModelList();
+                                }
+                            });
+                        }, 1500);
                     }
                 } catch (e) {
                     delete currentPortMapping[modelKey];
@@ -1055,7 +1082,8 @@
                     const port = configuredPort || getNextAvailablePort();
                     const portKey = String(port);
                     const portStatus = window.proxyStatus?.[portKey] || { running: false };
-                    const isChecked = !!configuredPort;
+                    // 只有配置了端口且代理进程实际在运行才勾选
+                    const isChecked = !!configuredPort && portStatus.running;
 
                     html += `
                         <tr data-model-key="${escapeHtml(modelKey)}" data-port="${port}">
@@ -1152,7 +1180,7 @@
             const configName = agentType === 'openclaw' ? 'openclaw.json' : 'settings.json';
             const agentName = agentType === 'openclaw' ? 'OpenClaw' : 'Claude Code';
             const restartInfo = agentType === 'openclaw'
-                ? '2. 自动重启 OpenClaw Gateway（约 1-2 秒）\n3. 所有智能体将使用新的全局配置'
+                ? '2. 自动重启 OpenClaw Gateway（约 10-30 秒，含健康检查）\n3. 所有智能体将使用新的全局配置'
                 : '2. 配置已更新，Claude Code 将在下次启动时使用新配置';
 
             const confirmMsg = count > 0
@@ -1173,12 +1201,14 @@ ${restartInfo}`;
             if (!confirm(confirmMsg)) return;
             const resultDiv = document.getElementById('syncResult');
             resultDiv.className = 'sync-result show';
-            resultDiv.innerHTML = `<div class="alert alert-info">⏳ 正在同步配置到 ${configName}，请稍候...</div>`;
+            resultDiv.innerHTML = `<div class="alert alert-info">⏳ 正在同步配置到 ${configName}，请稍候（约 10-30 秒）...</div>`;
             try {
                 const response = await fetch('/api/sync', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ agentType })
+                    body: JSON.stringify({ agentType }),
+                    // 增加 timeout 以支持更长的健康检查时间
+                    signal: AbortSignal.timeout(60000)  // 60 秒超时
                 });
                 const result = await response.json();
                 if (result.success) {
@@ -1382,7 +1412,20 @@ ${restartInfo}`;
                 });
             });
             loadConfig();
-            initDateSelect();
+            initDateSelect().then(() => {
+                // 检查是否从详情页返回（URL 中有 date 参数）
+                const params = new URLSearchParams(window.location.search);
+                const date = params.get('date');
+                if (date) {
+                    // 从详情页返回，自动加载该日期的日志
+                    console.log('Detected return from detail page, loading conversations for date:', date);
+                    document.getElementById('datetimeStart').value = date + 'T00:00';
+                    document.getElementById('datetimeEnd').value = date + 'T23:59';
+                    loadConversations();
+                    // 清除 URL 参数，避免刷新时重复加载
+                    window.history.replaceState({}, '', window.location.pathname);
+                }
+            });
         };
     </script>
 </body>

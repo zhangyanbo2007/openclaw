@@ -1,7 +1,7 @@
 ---
 name: model-log-viewer
-description: 模型日志查看器 - 启动 Web 界面管理模型代理、查看调用历史和会话详情
-when: "当用户提到'模型日志'、'日志查看'、'执行模型日志查看'、'查看模型调用'、'打开日志界面'或任何查看模型调用历史的需求"
+description: 模型日志查看器 - 启动 Web 界面管理模型代理、查看调用历史和会话详情；支持关闭日志查看器服务
+when: "当用户提到'模型日志'、'日志查看'、'执行模型日志查看'、'查看模型调用'、'打开日志界面'或任何查看模型调用历史的需求；或提到'关闭日志查看器'、'停止日志查看器'"
 examples:
   - "执行模型日志查看"
   - "查看模型调用历史"
@@ -9,6 +9,8 @@ examples:
   - "看看模型日志"
   - "启动日志查看器"
   - "查看会话历史"
+  - "关闭模型日志查看器"
+  - "停止日志查看器"
 metadata:
  {
    "openclaw": {
@@ -30,6 +32,7 @@ metadata:
 - **历史会话浏览**: 按日期查看历史会话记录
 - **会话详情**: 查看每个会话的请求和响应详情
 - **同步配置**: 将代理配置同步到 openclaw.json 并重启 gateway
+- **关闭服务**: 支持单独关闭日志查看器界面，保留代理进程继续运行
 
 ## 使用方法
 
@@ -42,7 +45,18 @@ cd /home/zhangyanbo/.openclaw/skills/model-log-viewer/scripts
 bash start.sh 9001
 ```
 
-### 2. 提供服务访问地址
+### 2. 关闭日志查看服务
+
+当用户要求关闭日志查看器时：
+
+```bash
+cd /home/zhangyanbo/.openclaw/skills/model-log-viewer/scripts
+bash stop.sh
+```
+
+**注意**: 关闭日志查看器不会影响 model_proxy 代理进程（8888/8889/8890 端口），代理会继续正常工作。
+
+### 3. 提供服务访问地址
 
 启动成功后，服务会在 http://localhost:9001 提供 Web 界面，用户可以在浏览器中：
 
@@ -52,7 +66,7 @@ bash start.sh 9001
 - 点击"同步到 openclaw.json"将配置写入并重启 gateway
 - 查看实时日志和历史会话
 
-### 3. 状态检查
+### 4. 状态检查
 
 检查服务是否已在运行：
 
@@ -71,7 +85,7 @@ pgrep -f "server.py.*9001"
 
 ## 日志目录
 
-- **位置**: `/code/project/deploy_model/logs/`
+- **位置**: `/home/zhangyanbo/.openclaw/model-logs/`
 - **结构**: `logs/YYYY-MM-DD/conv_<session_id>/`
 
 ## 注意事项
@@ -79,12 +93,15 @@ pgrep -f "server.py.*9001"
 1. 服务使用 `model_proxy` conda 环境
 2. 服务默认监听 9001 端口
 3. 如果端口被占用，可指定其他端口：`start.sh 9002`
+4. 关闭日志查看器不会影响代理进程
 
 ## 相关命令
 
 | 命令 | 说明 |
 |------|------|
 | `start.sh [PORT]` | 启动日志查看服务 |
-| `pkill -f "server.py"` | 停止服务 |
+| `stop.sh` | 停止日志查看服务（不影响代理） |
+| `pkill -f "server.py"` | 停止服务（不推荐，可能影响代理） |
 | `curl http://localhost:9001/api/proxy/status` | 检查代理状态 |
 | `curl http://localhost:9001/api/logs/conversations?date=YYYY-MM-DD` | 获取会话列表 |
+| `curl http://localhost:9001/api/viewer/stop` | POST 请求，停止日志查看器 |

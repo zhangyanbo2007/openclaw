@@ -1076,6 +1076,9 @@ class LogViewerHandler(SimpleHTTPRequestHandler):
             with open(openclaw_config_path, "w", encoding="utf-8") as f:
                 json.dump(openclaw_config, f, indent=2, ensure_ascii=False)
 
+            # 同步更新 agents/main/agent/models.json
+            self.sync_agents_models_json(port_to_model, all_models, current_localproxy_names, valid_model_keys)
+
             # 重启 gateway
             restart_result = self.restart_gateway()
 
@@ -1087,6 +1090,71 @@ class LogViewerHandler(SimpleHTTPRequestHandler):
             })
         except Exception as e:
             self.send_json({"success": False, "error": str(e)})
+
+    def sync_agents_models_json(self, port_to_model, all_models, current_localproxy_names, valid_model_keys):
+        """同步更新所有智能体的 models.json 文件"""
+        import glob
+
+        # 查找所有 agents/*/agent/models.json 文件
+        agents_pattern = str(Path.home() / ".openclaw" / "agents" / "*" / "agent" / "models.json")
+        models_files = glob.glob(agents_pattern)
+
+        for models_path in models_files:
+            try:
+                with open(models_path, "r", encoding="utf-8") as f:
+                    models_config = json.load(f)
+
+                # 确保 providers 字段存在
+                if "providers" not in models_config:
+                    models_config["providers"] = {}
+
+                providers = models_config["providers"]
+
+                # 收集需要删除的 localproxy-* providers
+                existing_localproxy = {k for k in providers.keys() if k.startswith("localproxy-")}
+                to_remove = existing_localproxy - current_localproxy_names
+
+                # 删除旧的 providers
+                for provider_name in sorted(to_remove):
+                    providers.pop(provider_name, None)
+
+                # 添加/更新新的 localproxy-* 配置
+                for port_str, model_key in port_to_model.items():
+                    port = int(port_str)
+                    provider_name = f"localproxy-{port}"
+                    original_model_info = all_models.get(model_key)
+                    model_id = model_key.split('/')[1]
+
+                    # 构建 provider 配置
+                    providers[provider_name] = {
+                        "baseUrl": f"http://localhost:{port}/v1",
+                        "apiKey": "not-needed",
+                        "api": "openai-completions",
+                        "models": [
+                            {
+                                "id": model_id,
+                                "name": f"{original_model_info['name'] if original_model_info else model_key} ({port})",
+                                "api": "openai-completions",
+                                # 继承原始模型能力
+                                **({
+                                    "reasoning": original_model_info["reasoning"],
+                                    "input": original_model_info["input"],
+                                    "contextWindow": original_model_info["contextWindow"],
+                                    "maxTokens": original_model_info["maxTokens"],
+                                    "cost": original_model_info["cost"]
+                                } if original_model_info else {})
+                            }
+                        ]
+                    }
+
+                # 写回文件
+                with open(models_path, "w", encoding="utf-8") as f:
+                    json.dump(models_config, f, indent=2, ensure_ascii=False)
+
+                print(f"已同步更新：{models_path}")
+
+            except Exception as e:
+                print(f"更新 {models_path} 失败：{e}")
 
     def sync_to_claudecode_post(self, params):
         """同步代理配置到 Claude Code settings.json"""

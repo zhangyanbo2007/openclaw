@@ -722,7 +722,10 @@ class ConversationLogger:
         # 根据后端 URL 判断 provider
         provider = self.detect_provider(backend_url)
 
-        conv_dir = self.today_dir / conv_id
+        # 动态计算日期目录（支持跨天运行）
+        today_dir = self.base_dir / datetime.now().strftime("%Y-%m-%d")
+        today_dir.mkdir(parents=True, exist_ok=True)
+        conv_dir = today_dir / conv_id
         conv_dir.mkdir(parents=True, exist_ok=True)
 
         timestamp = datetime.now().strftime("%Y%m%d_%H%M%S_%f")
